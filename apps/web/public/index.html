@@ -42,7 +42,7 @@
   </section>
 
   <section>
-    <h2>2. Get paid <span class="note">(fork only: adds fake USDC)</span></h2>
+    <h2>2. Get paid <span class="note">(fork only: a test payer sends you real fake-USDC)</span></h2>
     <form id="receive-form">
       <label>$ <input type="text" id="receive-amount" value="500" inputmode="decimal"></label>
       <button type="submit">Receive</button>
@@ -50,11 +50,12 @@
   </section>
 
   <section>
-    <h2>3. Stash it</h2>
-    <form id="preview-form">
-      <label>Payment $ <input type="text" id="payment-amount" value="500" inputmode="decimal"></label>
-      <button type="submit">Preview</button>
-    </form>
+    <h2>3. Payments you received</h2>
+    <p class="note">Read from the chain. Pick one to stash; the amount always comes from the chain.</p>
+    <table>
+      <thead><tr><th>When</th><th class="num">Amount</th><th>From</th><th></th></tr></thead>
+      <tbody id="payments"><tr><td colspan="4">Loading…</td></tr></tbody>
+    </table>
     <div id="preview"></div>
     <button id="stash-btn" hidden>Stash now</button>
     <div id="result"></div>

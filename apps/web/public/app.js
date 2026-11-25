@@ -3,7 +3,7 @@
 
 const $ = (id) => document.getElementById(id);
 let state = null;
-let previewed = null; // payment amount (base units) of the last successful preview
+let previewed = null; // signature of the payment last previewed
 
 /** "$12.50" -> "12500000" (USDC base units), using string maths, never floats. */
 function toBaseUnits(dollars) {
@@ -79,8 +79,10 @@ function render() {
 }
 
 async function refresh() {
-  state = await api("/api/state");
+  const [s, payments] = await Promise.all([api("/api/state"), api("/api/payments")]);
+  state = s;
   render();
+  renderPayments(payments);
 }
 
 $("eligible-btn").onclick = async () => {
@@ -112,23 +114,35 @@ $("receive-form").onsubmit = async (ev) => {
     showError("");
     const amount = toBaseUnits($("receive-amount").value);
     await api("/api/receive", { usdc: amount });
-    $("payment-amount").value = $("receive-amount").value;
     await refresh();
   } catch (e) { showError(e.message); }
 };
 
-$("preview-form").onsubmit = async (ev) => {
-  ev.preventDefault();
+function renderPayments(payments) {
+  if (!payments.length) {
+    $("payments").innerHTML = '<tr><td colspan="4">No payments yet. Use "Receive" above.</td></tr>';
+    return;
+  }
+  $("payments").innerHTML = payments.map((p) => {
+    const when = p.blockTime ? new Date(p.blockTime * 1000).toLocaleString() : "";
+    const from = p.from ? `${p.from.slice(0, 4)}…${p.from.slice(-4)}` : "?";
+    const action = p.decision
+      ? `<span class="note">${p.decision.status}</span>`
+      : `<button data-preview="${p.signature}">Preview</button> <button data-skip="${p.signature}">Skip</button>`;
+    return `<tr><td>${when}</td><td class="num">${usd(p.amountUsdc)}</td><td><code>${from}</code></td><td>${action}</td></tr>`;
+  }).join("");
+}
+
+async function previewPayment(signature) {
   $("stash-btn").hidden = true;
   $("result").innerHTML = "";
   $("preview").textContent = "Getting live quotes…";
   try {
     showError("");
-    const paymentUsdc = toBaseUnits($("payment-amount").value);
-    const p = await api("/api/preview", { paymentUsdc });
-    previewed = paymentUsdc;
+    const p = await api("/api/preview", { paymentSignature: signature });
+    previewed = signature;
     $("preview").innerHTML =
-      `<p>Stash ${usd(p.stashUsdc)} of ${usd(p.paymentUsdc)}, in one transaction ` +
+      `<p>Stash ${usd(p.stashUsdc)} of this ${usd(p.paymentUsdc)} payment, in one transaction ` +
       `(${p.bytes} / 1232 bytes, ${p.accounts} / 64 accounts).</p>` +
       `<table><thead><tr><th>Stock</th><th class="num">Spend</th><th class="num">About</th><th>Route</th></tr></thead><tbody>` +
       p.legs.map((l) =>
@@ -141,6 +155,20 @@ $("preview-form").onsubmit = async (ev) => {
     $("preview").textContent = "";
     showError(e.message);
   }
+}
+
+$("payments").onclick = async (ev) => {
+  const preview = ev.target.getAttribute && ev.target.getAttribute("data-preview");
+  const skip = ev.target.getAttribute && ev.target.getAttribute("data-skip");
+  if (preview) return previewPayment(preview);
+  if (skip) {
+    try {
+      showError("");
+      await api("/api/skip", { paymentSignature: skip });
+      if (previewed === skip) { $("preview").innerHTML = ""; $("stash-btn").hidden = true; }
+      await refresh();
+    } catch (e) { showError(e.message); }
+  }
 };
 
 $("stash-btn").onclick = async () => {
@@ -148,7 +176,7 @@ $("stash-btn").onclick = async () => {
   $("result").textContent = "Stashing…";
   try {
     showError("");
-    const r = await api("/api/stash", { paymentUsdc: previewed });
+    const r = await api("/api/stash", { paymentSignature: previewed });
     $("result").innerHTML =
       `<p class="ok">Stashed ${usd(r.spentUsdc)} into ${r.legs.map((l) => l.symbol).join(", ")} ` +
       `in one transaction (${r.computeUnits} compute units).<br>Signature (fork): <code>${r.signature}</code></p>`;
