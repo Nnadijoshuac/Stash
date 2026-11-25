@@ -181,6 +181,10 @@ $("stash-btn").onclick = async () => {
       `<p class="ok">Stashed ${usd(r.spentUsdc)} into ${r.legs.map((l) => l.symbol).join(", ")} ` +
       `in one transaction (${r.computeUnits} compute units).<br>Signature (fork): <code>${r.signature}</code></p>`;
     $("stash-btn").hidden = true;
+    // Re-reading every payment from the chain takes a few seconds. Mark this
+    // one stashed straight away so the row never looks untouched meanwhile.
+    const row = document.querySelector(`button[data-preview="${previewed}"]`);
+    if (row) row.parentElement.innerHTML = '<span class="note">stashed</span>';
     await refresh();
   } catch (e) {
     $("result").textContent = "";
