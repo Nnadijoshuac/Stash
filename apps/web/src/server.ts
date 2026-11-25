@@ -15,6 +15,7 @@ import { fileURLToPath } from "node:url";
 import { Connection, PublicKey } from "@solana/web3.js";
 import {
   STOCKS,
+  TOKEN_PROGRAM_ID,
   USDC_MINT,
   allocate,
   buildBasket,
@@ -22,7 +23,14 @@ import {
   validateRule,
   type StashRule,
 } from "@stash/core";
-import { SURFNET_RPC_URL, assertSurfnet, loadOrCreateKeypair } from "@stash/fork";
+import {
+  SURFNET_RPC_URL,
+  assertSurfnet,
+  loadOrCreateKeypair,
+  protectedAccounts,
+  refreshRoute,
+  setTokenBalance,
+} from "@stash/fork";
 import { load, save } from "./store";
 
 const PORT = Number(process.env.PORT ?? 4321);
@@ -130,6 +138,61 @@ routes["POST /api/preview"] = async (req) => {
     accounts: built.accounts,
     warnings: built.warnings,
   };
+};
+
+/**
+ * Stashes part of a payment: build, sign with the fork wallet, simulate, send.
+ * Refuses until eligibility has been confirmed. Records the signature.
+ */
+routes["POST /api/stash"] = async (req) => {
+  const state = load();
+  if (!state.eligibleConfirmedAt) {
+    throw new Error("Confirm you are eligible to hold xStocks before your first stash.");
+  }
+  const paymentUsdc = usdcField(await readJson(req), "paymentUsdc");
+  const allocation = allocate(paymentUsdc, requireRule());
+  const owner = wallet.publicKey.toBase58();
+  const usdcBefore = await balance(owner, USDC_MINT);
+  if (usdcBefore < allocation.stashUsdc) throw new Error("Not enough USDC in the wallet for this stash.");
+
+  const built = await buildBasket({ connection, owner, treasury, allocation });
+  // Fork mode: bring the route's pools up to date with mainnet first (ISSUES #7).
+  await refreshRoute(built.routeAccounts, protectedAccounts(owner, treasury));
+  built.transaction.sign([wallet]);
+  const sim = await connection.simulateTransaction(built.transaction, { sigVerify: true });
+  if (sim.value.err) {
+    throw new Error(`The network would reject this stash (${JSON.stringify(sim.value.err)}). Nothing was sent.`);
+  }
+  const signature = await connection.sendRawTransaction(built.transaction.serialize(), { skipPreflight: true });
+  const confirmation = await connection.confirmTransaction(signature, "confirmed");
+  if (confirmation.value.err) throw new Error(`The stash failed on chain. Signature ${signature}`);
+
+  const record = {
+    signature,
+    at: new Date().toISOString(),
+    paymentUsdc: paymentUsdc.toString(),
+    stashUsdc: allocation.stashUsdc.toString(),
+    legs: allocation.legs.map((l) => ({ symbol: l.symbol, usdc: l.usdc.toString() })),
+    computeUnits: sim.value.unitsConsumed ?? null,
+    bytes: built.bytes,
+  };
+  const fresh = load();
+  fresh.stashes.unshift(record);
+  save(fresh);
+  return { ...record, spentUsdc: usdcBefore - (await balance(owner, USDC_MINT)) };
+};
+
+/**
+ * Fork only: pretend a payment arrived by adding fake USDC to the wallet.
+ * This stands in for "you got paid" until real wallets are connected.
+ */
+routes["POST /api/receive"] = async (req) => {
+  const amount = usdcField(await readJson(req), "usdc");
+  if (amount <= 0n || amount > 100_000_000_000n) throw new Error("Receive between $0 and $100,000 of fake USDC.");
+  const owner = wallet.publicKey.toBase58();
+  const next = (await balance(owner, USDC_MINT)) + amount;
+  await setTokenBalance(owner, USDC_MINT, next, TOKEN_PROGRAM_ID);
+  return { receivedUsdc: amount, usdc: next };
 };
 
 async function serveStatic(path: string, res: ServerResponse): Promise<void> {
