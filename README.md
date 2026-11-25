@@ -33,11 +33,12 @@
 
 | What has been observed on chain | Where the boundary is |
 | :--- | :--- |
-| A two-stock basket, $60 S&P 500 + $40 Nvidia, landing in **one** transaction | On a local **mainnet fork** with fake balances, not on mainnet. |
-| A three-stock basket in one transaction: 1,118 of 1,232 bytes, 47 of 64 accounts | Three stocks is the ceiling; a fourth does not fit. |
-| Exactly the allocated $100.00 leaving the wallet, to the cent | Jupiter's routes change per quote, so size is re-measured every build. |
-| Stash's 0.5% fee arriving in the treasury, in each stock | The UI does not exist yet. |
-| 197,063 compute units for two stocks, 252,633 for three | Eligibility (no US persons, Canada, UK or Australia) is not yet enforced in an app. |
+| A payment arriving, found by reading the chain, then 20% of it stashed into stocks | On a local **mainnet fork** with fake balances, not on mainnet. |
+| A two- and a three-stock basket landing in **one** transaction (843 and 1,118 of 1,232 bytes) | Three stocks is the ceiling; a fourth does not fit. |
+| The user's wallet signing in the browser; the server never holds the key | On the fork the wallet is a test keypair kept in the browser, not Phantom. |
+| The server refusing a different transaction than it built, a replay, and a double stash | Build state lives in memory; a server restart means "build again". |
+| Exactly the allocated amount leaving the wallet, and Stash's 0.5% fee arriving in the treasury | The user pays network fees in SOL; nothing sponsors them yet. |
+| Selling part of a stock back to USDC, fee included | Eligibility is a confirmation the user ticks, not a verified check. |
 
 **Every signature here is from a local mainnet fork (surfpool), funded with fake balances.** The
 programs, pools and token mints are real mainnet state cloned on read; the money is not. Nothing in
@@ -107,10 +108,11 @@ quoting, transaction building), `apps/web` (rule, stash and portfolio screens) a
 | Stage | What happens |
 | :--- | :--- |
 | Rule | The user picks a percentage and a basket. Stored per wallet. |
-| Detect | A USDC payment arrives in the wallet. |
+| Detect | A USDC payment arrives. Stash finds it by reading the chain; the amount is never typed in. |
 | Quote | The server quotes each leg through Jupiter. The client never names a price. |
 | Build | All legs go into one transaction, using a lookup table to fit 1,232 bytes. |
-| Sign | The user confirms once. |
+| Sign | The server returns the transaction unsigned. The user's wallet signs it in the browser. |
+| Verify | The server checks the signed message is byte-for-byte the one it built, and the owner's signature, before sending. |
 | Land | Either every stock in the basket arrives, or nothing moves. |
 
 _Day-1 check: whether two or more Jupiter routes fit in one transaction. If they do not, Stash sends
@@ -134,7 +136,9 @@ one transaction per stock, and this chapter will say so._
 
 ## 06 · Getting out
 
-_Planned: selling a position back to USDC from the portfolio screen._
+Sell any share of a position back to USDC: one route, one transaction, signed by the user's
+wallet, with Stash's 0.5% fee taken in USDC. Observed on the fork: half of an NVDAx position sold
+for $248.53 against a $248.55 quote.
 
 <a id="vii-risk"></a>
 
@@ -178,7 +182,12 @@ _After the first build._
 | 60% SPYx, 40% NVDAx | 874 / 1,232 | 35 / 64 | 197,063 | $100.00 | `5q6T9X8eUTp9ec7abSnLbhhGUjoX8AyoNatvs54pHZjwhwLsevBGnkV5gCw45tGDxAda5oWPw2qP1pp8VtQ9t77u` |
 | 50% SPYx, 30% NVDAx, 20% TSLAx | 1,118 / 1,232 | 47 / 64 | 252,633 | $100.00 | `59DdfM4dozHF3XSwRd5xLEDRRvvBHsty6vTbQbqUE4YiNDoXH6jS21SiUHGjJGX6ynTxkL5xLg5DupUHC3qe32w6` |
 
-Reproduce: start surfpool, then `pnpm fund && pnpm stash` (or `pnpm stash 3`).
+Also observed on the fork, through the app's API with a client-held key (`pnpm api`): a payment
+detected on chain and stashed with a browser-style signature; a sale; and three cheats refused
+(a different transaction under the same build, a replayed build, stashing a payment twice).
+
+Reproduce: start surfpool, then `pnpm fund && pnpm stash` (or `pnpm stash 3`), `pnpm payment`,
+`pnpm sell`, and with the app running, `pnpm api`.
 Unit tests: 27, on the allowlist, the allocation, fee accounts and transaction packing (`pnpm test`).
 
 **Built, not observed end to end**
@@ -192,7 +201,9 @@ _Nothing yet._
 
 **Open work**
 
-- The UI: rule, one-tap stash, portfolio, and the eligibility confirmation.
+- A designed UI. The current page is deliberately plain HTML.
+- Phantom or another real wallet in place of the fork's browser test wallet.
+- A fee sponsor, so a user with no SOL can still stash.
 - Mainnet deployment is deliberately not done: the owner's rule is zero real-money cost.
 
 ---
