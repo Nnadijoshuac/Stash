@@ -12,3 +12,4 @@ export * from "./basket";
 export * from "./payments";
 export * from "./sell";
 export * from "./verify";
+export * from "./prices";
