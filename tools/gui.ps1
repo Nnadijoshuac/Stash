@@ -49,12 +49,13 @@ public static class GuiNative {
   [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr h);
   [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetWindowText(IntPtr h, System.Text.StringBuilder s, int n);
   /** First visible top-level window whose title contains `part`. */
-  public static IntPtr FindByTitle(string part) {
+  public static IntPtr FindByTitle(string part, string suffix) {
     IntPtr found = IntPtr.Zero;
     EnumWindows((h, l) => {
       if (!IsWindowVisible(h)) return true;
       var sb = new System.Text.StringBuilder(512); GetWindowText(h, sb, 512);
-      if (sb.ToString().Contains(part)) { found = h; return false; }
+      string title = sb.ToString();
+      if (title.Contains(part) && title.EndsWith(suffix)) { found = h; return false; }
       return true;
     }, IntPtr.Zero);
     return found;
@@ -83,7 +84,7 @@ switch ($Action) {
     $h = [IntPtr]::Zero
     for ($i = 0; $i -lt 40 -and $h -eq [IntPtr]::Zero; $i++) {
       Start-Sleep -Milliseconds 250
-      $h = [GuiNative]::FindByTitle("$Title - Brave")
+      $h = [GuiNative]::FindByTitle($Title, ' - Brave')
     }
     if ($h -eq [IntPtr]::Zero) { throw "Opened $Url but found no window titled '$Title - Brave'. Nothing was moved." }
     [GuiNative]::keybd_event(0x12, 0, 0, [UIntPtr]::Zero); [GuiNative]::keybd_event(0x12, 0, 2, [UIntPtr]::Zero)
@@ -97,7 +98,7 @@ switch ($Action) {
   'focus' {
     # Brings the window whose title contains -Title to the front on the chosen
     # screen. Keys then go to the app, not to whatever was in front.
-    $h = [GuiNative]::FindByTitle("$Title - Brave")
+    $h = [GuiNative]::FindByTitle($Title, ' - Brave')
     if ($h -eq [IntPtr]::Zero) { throw "No Brave window titled '$Title - Brave'." }
     [GuiNative]::keybd_event(0x12, 0, 0, [UIntPtr]::Zero); [GuiNative]::keybd_event(0x12, 0, 2, [UIntPtr]::Zero)
     [void][GuiNative]::ShowWindow($h, 9)
