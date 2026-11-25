@@ -10,7 +10,8 @@
   "scripts": {
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
-    "basket-size": "pnpm --filter @stash/scripts basket-size"
+    "basket-size": "pnpm --filter @stash/scripts basket-size",
+    "fund": "pnpm --filter @stash/scripts fund"
   },
   "devDependencies": {
     "typescript": "^5.6.3"

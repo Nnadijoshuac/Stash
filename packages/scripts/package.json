@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "basket-size": "tsx src/e2e-basket-size.ts"
+    "basket-size": "tsx src/e2e-basket-size.ts",
+    "fund": "tsx src/fund.ts"
   },
   "dependencies": {
     "@stash/core": "workspace:*",
