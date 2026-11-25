@@ -36,6 +36,9 @@ importers:
 
   packages/core:
     dependencies:
+      '@noble/curves':
+        specifier: ^1.9.7
+        version: 1.9.7
       '@solana/web3.js':
         specifier: ^1.95.4
         version: 1.99.0(bufferutil@4.2.0)(typescript@5.9.3)(utf-8-validate@6.1.0)
