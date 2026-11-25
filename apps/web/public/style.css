@@ -238,8 +238,8 @@ input[type="range"] { width: 100%; accent-color: var(--orange); }
 .legs { list-style: none; margin: 0 0 16px; padding: 0; border: 1px solid var(--line); border-radius: 14px; }
 .legs li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; padding: 12px 14px; border-top: 1px solid var(--line); }
 .legs li:first-child { border-top: 0; }
-.legs .leg-name { font-weight: 600; }
-.legs .leg-route { font-size: 0.78rem; color: var(--ink-3); }
+.legs .leg-name { display: block; font-weight: 600; }
+.legs .leg-route { display: block; font-size: 0.78rem; color: var(--ink-3); }
 .legs .leg-amt { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
 .legs .leg-shares { display: block; font-size: 0.78rem; color: var(--ink-3); font-weight: 400; }
 .proof { font-size: 0.82rem; color: var(--ink-3); margin-bottom: 18px; }
