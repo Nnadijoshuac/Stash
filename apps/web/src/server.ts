@@ -27,6 +27,8 @@ import {
   buildBasket,
   buildSell,
   getIncomingPayment,
+  getPrices,
+  usdValue,
   listIncomingPayments,
   sellAmount,
   stockForMint,
@@ -114,12 +116,19 @@ async function requirePayment(owner: string, body: Record<string, unknown>): Pro
 
 routes["GET /api/state"] = async (_req, q) => {
   const owner = ownerKey(q.get("owner"));
-  const [usdc, sol, holdings] = await Promise.all([
+  const [usdc, sol, amounts, prices] = await Promise.all([
     balance(owner, USDC_MINT),
     connection.getBalance(new PublicKey(owner)),
-    Promise.all(STOCKS.map(async (s) => ({ ...s, amount: await balance(owner, s.mint) }))),
+    Promise.all(STOCKS.map((s) => balance(owner, s.mint))),
+    // Prices are display-only; the page still works without them.
+    getPrices(STOCKS.map((s) => s.mint)).catch(() => ({}) as Awaited<ReturnType<typeof getPrices>>),
   ]);
-  return { network: "local mainnet fork (fake money)", owner, treasury, usdc, sol, holdings, stocks: STOCKS, ...load(owner) };
+  const holdings = STOCKS.map((s, i) => {
+    const price = prices[s.mint];
+    return { ...s, amount: amounts[i]!, usdPrice: price?.usdPrice ?? null, change24h: price?.change24h ?? null, usdValue: usdValue(amounts[i]!, s.decimals, price) };
+  });
+  const stashedUsd = holdings.reduce((sum, h) => sum + (h.usdValue ?? 0), 0);
+  return { network: "local mainnet fork (fake money)", owner, treasury, usdc, sol, holdings, stashedUsd, stocks: STOCKS, ...load(owner) };
 };
 
 routes["GET /api/payments"] = async (_req, q) => {
