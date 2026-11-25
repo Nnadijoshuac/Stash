@@ -99,3 +99,56 @@ export async function refreshRoute(accounts: string[], keep: Iterable<string>): 
   for (const a of targets) await resetAccount(a);
   return targets.length;
 }
+
+/**
+ * Seconds the fork's on-chain clock is ahead of real time (negative when behind).
+ *
+ * Reads the Clock sysvar, which is what programs like Whirlpool actually
+ * check. getBlockTime() is only an estimate and lags: on 25 Nov it said the
+ * fork was 11s behind while the Clock sysvar was 3s ahead, and time travel
+ * then failed with "Cannot travel to past timestamp" (ISSUES #10).
+ */
+export async function clockDriftSeconds(): Promise<number> {
+  const info = (await rpc("getAccountInfo", ["SysvarC1ock11111111111111111111111111111111", { encoding: "base64" }])) as {
+    value: { data: [string, string] } | null;
+  };
+  if (!info.value) return 0;
+  // Clock layout: slot u64, epoch_start_timestamp i64, epoch u64,
+  // leader_schedule_epoch u64, unix_timestamp i64 (bytes 32..40).
+  const unixTimestamp = Number(Buffer.from(info.value.data[0], "base64").readBigInt64LE(32));
+  return unixTimestamp - Math.floor(Date.now() / 1000);
+}
+
+/**
+ * Keeps the fork's clock at real time.
+ *
+ * The fork's clock drifts from the wall clock (it was 73 minutes behind on
+ * 25 Nov). refreshRoute() pulls pools from mainnet stamped with the real
+ * current time, and Whirlpool then refuses to swap: "InvalidTimestamp ...
+ * Timestamp should be greater than the last updated timestamp" (6022,
+ * ISSUES #10). surfnet_timeTravel moves the clock forward without a restart,
+ * so the fake balances survive. A clock running ahead cannot be moved back;
+ * that only matters if it is far ahead, and then needs a fork restart.
+ *
+ * Never throws: a failed sync is reported, and the stash's own simulation
+ * decides whether it is safe to send.
+ */
+export async function syncClock(toleranceSeconds = 10): Promise<number> {
+  const drift = await clockDriftSeconds();
+  if (drift < -toleranceSeconds) {
+    try {
+      await rpc("surfnet_timeTravel", [{ absoluteTimestamp: Date.now() }]);
+    } catch (e) {
+      console.warn(`Could not move the fork clock forward: ${(e as Error).message}`);
+    }
+  } else if (drift > 120) {
+    console.warn(`Fork clock is ${drift}s ahead of real time; restart surfpool and re-run pnpm fund.`);
+  }
+  return drift;
+}
+
+/** Everything a fork needs right before a stash is simulated: real-time clock, fresh pools. */
+export async function prepareForkForSend(routeAccounts: string[], keep: Iterable<string>): Promise<void> {
+  await syncClock();
+  await refreshRoute(routeAccounts, keep);
+}
