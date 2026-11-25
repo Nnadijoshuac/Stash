@@ -13,7 +13,15 @@ import { readFile } from "node:fs/promises";
 import { extname, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Connection, PublicKey } from "@solana/web3.js";
-import { STOCKS, USDC_MINT, validateRule, type StashRule } from "@stash/core";
+import {
+  STOCKS,
+  USDC_MINT,
+  allocate,
+  buildBasket,
+  stockForMint,
+  validateRule,
+  type StashRule,
+} from "@stash/core";
 import { SURFNET_RPC_URL, assertSurfnet, loadOrCreateKeypair } from "@stash/fork";
 import { load, save } from "./store";
 
@@ -81,6 +89,47 @@ routes["POST /api/rule"] = async (req) => {
   state.rule = { stashBps: rule.stashBps, basket: rule.basket.map((b) => ({ mint: b.mint, weightBps: b.weightBps })) };
   save(state);
   return { ok: true, rule: state.rule };
+};
+
+/** USDC base units from a request field, refusing anything that is not a whole number. */
+function usdcField(body: Record<string, unknown>, field: string): bigint {
+  const raw = String(body[field] ?? "");
+  if (!/^[0-9]+$/.test(raw)) throw new Error("Enter an amount in USDC base units (whole number).");
+  return BigInt(raw);
+}
+
+function requireRule(): StashRule {
+  const { rule } = load();
+  if (!rule) throw new Error("Set your rule first: how much to stash, and into which stocks.");
+  return rule;
+}
+
+/**
+ * What a stash of this payment would buy, with live quotes, and whether it
+ * fits one transaction. Builds the transaction but never signs or sends it.
+ */
+routes["POST /api/preview"] = async (req) => {
+  const paymentUsdc = usdcField(await readJson(req), "paymentUsdc");
+  const allocation = allocate(paymentUsdc, requireRule());
+  const built = await buildBasket({ connection, owner: wallet.publicKey.toBase58(), treasury, allocation });
+  return {
+    paymentUsdc,
+    stashUsdc: allocation.stashUsdc,
+    legs: allocation.legs.map((leg, i) => {
+      const q = built.quotes[i]!;
+      return {
+        symbol: leg.symbol,
+        tracks: stockForMint(leg.mint).tracks,
+        usdc: leg.usdc,
+        expectedShares: Number(q.outAmount) / 10 ** stockForMint(leg.mint).decimals,
+        route: q.routePlan.map((r) => r.swapInfo.label ?? "?").join(" > "),
+        feeBps: q.platformFee?.feeBps ?? 0,
+      };
+    }),
+    bytes: built.bytes,
+    accounts: built.accounts,
+    warnings: built.warnings,
+  };
 };
 
 async function serveStatic(path: string, res: ServerResponse): Promise<void> {
