@@ -96,6 +96,8 @@ async function buildSignSubmit(buildPath, body, onStep = () => {}) {
 
 function render() {
   $("wallet-chip").textContent = `${short(owner)} · ${(state.sol / 1e9).toFixed(2)} SOL`;
+  const hour = new Date().getHours();
+  $("greeting").textContent = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
   const eligible = Boolean(state.eligibleConfirmedAt);
   $("onboard").hidden = eligible;
   $("app").hidden = !eligible;
@@ -107,18 +109,28 @@ function render() {
   $("hero-sub").textContent =
     `${usd(state.usdc)} USDC ready · ${stashedCount} ${stashedCount === 1 ? "stash" : "stashes"}`;
   const held = state.holdings.filter((h) => BigInt(h.amount) > 0n);
+  const colourFor = (mint) => {
+    const i = state.rule ? state.rule.basket.findIndex((b) => b.mint === mint) : -1;
+    return i >= 0 ? BASKET_COLOURS[i] : "oklch(55% 0.02 262)";
+  };
+  const totalValue = held.reduce((s, h) => s + (h.usdValue || 0), 0);
+  $("alloc").innerHTML = held.map((h) =>
+    `<span style="flex:${h.usdValue || 0.0001};background:${colourFor(h.mint)}" title="${esc(h.tracks)}"></span>`).join("");
+  $("alloc").hidden = !held.length || !totalValue;
   $("holdings").innerHTML = held.length
     ? held.map((h) => {
-        const chg = h.change24h == null ? "" :
-          `<span class="chg ${h.change24h >= 0 ? "up" : "down"}">${h.change24h >= 0 ? "+" : ""}${h.change24h.toFixed(2)}% today</span>`;
-        return `<li class="holding">
-          <span class="ticker">${esc(h.symbol.replace(/x$/, ""))}</span>
-          <span><span class="name">${esc(h.tracks)}</span><span class="sub">${tokens(h.amount, h.decimals)} ${esc(h.symbol)}</span></span>
-          <span class="value">${h.usdValue == null ? "–" : dollars(h.usdValue)}${chg}</span>
-          <button class="btn btn-sell" data-sell="${h.mint}">Sell</button>
-        </li>`;
+        const chg = h.change24h == null ? "–" :
+          `<span class="chg ${h.change24h >= 0 ? "up" : "down"}">${h.change24h >= 0 ? "+" : ""}${h.change24h.toFixed(2)}%</span>`;
+        return `<tr>
+          <td><span class="stock"><span class="ticker" style="background:${colourFor(h.mint)}">${esc(h.symbol.replace(/x$/, ""))}</span>
+            <span><span class="stock-name">${esc(h.tracks)}</span><span class="stock-sym">${esc(h.symbol)}</span></span></span></td>
+          <td class="num">${tokens(h.amount, h.decimals)}</td>
+          <td class="num">${chg}</td>
+          <td class="num"><strong>${h.usdValue == null ? "–" : dollars(h.usdValue)}</strong></td>
+          <td class="num"><button class="btn btn-quiet btn-sm" data-sell="${h.mint}">Sell</button></td>
+        </tr>`;
       }).join("")
-    : `<li class="empty-ink">Nothing stashed yet. Your first payment will land here.</li>`;
+    : `<tr class="empty-row"><td colspan="5">Nothing stashed yet. Your first payment will land here.</td></tr>`;
 
   renderRule();
   renderActivity();
@@ -175,13 +187,13 @@ function renderPayments() {
     const when = p.blockTime ? timeOf(p.blockTime) : "";
     const from = p.from ? `from ${short(p.from)}` : "";
     if (p.decision) {
-      return `<li class="payment done">
+      return `<li class="payment done"><span class="pay-icon">$</span>
         <div><div class="amount">${usd(p.amountUsdc)}</div><div class="meta">${from} · ${when}</div></div>
         <span class="tag ${p.decision.status}">${p.decision.status === "stashed" ? "Stashed" : "Left in USDC"}</span>
       </li>`;
     }
     const stashAmt = pct ? usd((BigInt(p.amountUsdc) * BigInt(pct)) / 10000n) : null;
-    return `<li class="payment">
+    return `<li class="payment"><span class="pay-icon">$</span>
       <div><div class="amount">${usd(p.amountUsdc)}</div><div class="meta">${from} · ${when}</div></div>
       <div class="actions">
         <button class="btn btn-quiet btn-sm" data-skip="${p.signature}">Skip</button>
@@ -348,6 +360,10 @@ $("eligible-btn").onclick = async () => {
 };
 
 $("rule-edit-btn").onclick = () => { editingRule = true; renderRuleForm(); renderRule(); };
+$("rule-edit-btn-top").onclick = () => {
+  editingRule = true; renderRuleForm(); renderRule();
+  $("rule").scrollIntoView({ behavior: "smooth", block: "start" });
+};
 $("rule-cancel").onclick = () => { editingRule = false; renderRule(); };
 $("stash-pct").oninput = () => { $("stash-pct-out").textContent = `${$("stash-pct").value}%`; };
 $("rule-form").onsubmit = async (ev) => {
