@@ -15,12 +15,14 @@ import { fileURLToPath } from "node:url";
 import { Connection, PublicKey } from "@solana/web3.js";
 import {
   STOCKS,
-  TOKEN_PROGRAM_ID,
   USDC_MINT,
   allocate,
   buildBasket,
+  getIncomingPayment,
+  listIncomingPayments,
   stockForMint,
   validateRule,
+  type IncomingPayment,
   type StashRule,
 } from "@stash/core";
 import {
@@ -29,7 +31,7 @@ import {
   loadOrCreateKeypair,
   protectedAccounts,
   refreshRoute,
-  setTokenBalance,
+  sendUsdc,
 } from "@stash/fork";
 import { load, save } from "./store";
 
@@ -40,6 +42,7 @@ await assertSurfnet();
 const connection = new Connection(SURFNET_RPC_URL, "confirmed");
 const wallet = loadOrCreateKeypair("wallet");
 const treasury = loadOrCreateKeypair("treasury").publicKey.toBase58();
+const payer = loadOrCreateKeypair("payer");
 
 async function balance(owner: string, mint: string): Promise<bigint> {
   const res = await connection.getParsedTokenAccountsByOwner(new PublicKey(owner), { mint: new PublicKey(mint) });
@@ -113,15 +116,38 @@ function requireRule(): StashRule {
 }
 
 /**
- * What a stash of this payment would buy, with live quotes, and whether it
+ * Resolves the payment a request refers to. Only a signature comes from the
+ * client; the amount is always re-read from the chain, so nobody can stash
+ * more than actually arrived. Refuses a payment already stashed or skipped.
+ */
+async function requirePayment(body: Record<string, unknown>): Promise<IncomingPayment> {
+  const signature = String(body.paymentSignature ?? "");
+  if (!/^[1-9A-HJ-NP-Za-km-z]{64,90}$/.test(signature)) throw new Error("Choose a payment to stash.");
+  const decided = load().payments[signature];
+  if (decided) throw new Error(`That payment was already ${decided.status}.`);
+  const payment = await getIncomingPayment(connection, wallet.publicKey.toBase58(), signature);
+  if (!payment) throw new Error("That transaction is not a payment into this wallet.");
+  return payment;
+}
+
+/** Incoming payments read off the chain, each with what the user decided. */
+routes["GET /api/payments"] = async () => {
+  const found = await listIncomingPayments(connection, wallet.publicKey.toBase58(), { limit: 25 });
+  const { payments } = load();
+  return found.map((p) => ({ ...p, decision: payments[p.signature] ?? null }));
+};
+
+/**
+ * What stashing this payment would buy, with live quotes, and whether it
  * fits one transaction. Builds the transaction but never signs or sends it.
  */
 routes["POST /api/preview"] = async (req) => {
-  const paymentUsdc = usdcField(await readJson(req), "paymentUsdc");
-  const allocation = allocate(paymentUsdc, requireRule());
+  const payment = await requirePayment(await readJson(req));
+  const allocation = allocate(payment.amountUsdc, requireRule());
   const built = await buildBasket({ connection, owner: wallet.publicKey.toBase58(), treasury, allocation });
   return {
-    paymentUsdc,
+    paymentSignature: payment.signature,
+    paymentUsdc: payment.amountUsdc,
     stashUsdc: allocation.stashUsdc,
     legs: allocation.legs.map((leg, i) => {
       const q = built.quotes[i]!;
@@ -140,59 +166,77 @@ routes["POST /api/preview"] = async (req) => {
   };
 };
 
+/** Payments with a stash in flight. A second click on the same payment is refused, not queued. */
+const inFlight = new Set<string>();
+
 /**
- * Stashes part of a payment: build, sign with the fork wallet, simulate, send.
- * Refuses until eligibility has been confirmed. Records the signature.
+ * Stashes part of one incoming payment: build, sign with the fork wallet,
+ * simulate, send. Refuses until eligibility is confirmed, and refuses a
+ * payment that has already been stashed or skipped.
  */
 routes["POST /api/stash"] = async (req) => {
-  const state = load();
-  if (!state.eligibleConfirmedAt) {
+  if (!load().eligibleConfirmedAt) {
     throw new Error("Confirm you are eligible to hold xStocks before your first stash.");
   }
-  const paymentUsdc = usdcField(await readJson(req), "paymentUsdc");
-  const allocation = allocate(paymentUsdc, requireRule());
-  const owner = wallet.publicKey.toBase58();
-  const usdcBefore = await balance(owner, USDC_MINT);
-  if (usdcBefore < allocation.stashUsdc) throw new Error("Not enough USDC in the wallet for this stash.");
+  const payment = await requirePayment(await readJson(req));
+  if (inFlight.has(payment.signature)) throw new Error("This payment is already being stashed.");
+  inFlight.add(payment.signature);
+  try {
+    const allocation = allocate(payment.amountUsdc, requireRule());
+    const owner = wallet.publicKey.toBase58();
+    const usdcBefore = await balance(owner, USDC_MINT);
+    if (usdcBefore < allocation.stashUsdc) throw new Error("Not enough USDC in the wallet for this stash.");
 
-  const built = await buildBasket({ connection, owner, treasury, allocation });
-  // Fork mode: bring the route's pools up to date with mainnet first (ISSUES #7).
-  await refreshRoute(built.routeAccounts, protectedAccounts(owner, treasury));
-  built.transaction.sign([wallet]);
-  const sim = await connection.simulateTransaction(built.transaction, { sigVerify: true });
-  if (sim.value.err) {
-    throw new Error(`The network would reject this stash (${JSON.stringify(sim.value.err)}). Nothing was sent.`);
+    const built = await buildBasket({ connection, owner, treasury, allocation });
+    // Fork mode: bring the route's pools up to date with mainnet first (ISSUES #7).
+    await refreshRoute(built.routeAccounts, protectedAccounts(owner, treasury));
+    built.transaction.sign([wallet]);
+    const sim = await connection.simulateTransaction(built.transaction, { sigVerify: true });
+    if (sim.value.err) {
+      throw new Error(`The network would reject this stash (${JSON.stringify(sim.value.err)}). Nothing was sent.`);
+    }
+    const signature = await connection.sendRawTransaction(built.transaction.serialize(), { skipPreflight: true });
+    const confirmation = await connection.confirmTransaction(signature, "confirmed");
+    if (confirmation.value.err) throw new Error(`The stash failed on chain. Signature ${signature}`);
+
+    const record = {
+      signature,
+      paymentSignature: payment.signature,
+      at: new Date().toISOString(),
+      paymentUsdc: payment.amountUsdc.toString(),
+      stashUsdc: allocation.stashUsdc.toString(),
+      legs: allocation.legs.map((l) => ({ symbol: l.symbol, usdc: l.usdc.toString() })),
+      computeUnits: sim.value.unitsConsumed ?? null,
+      bytes: built.bytes,
+    };
+    const fresh = load();
+    fresh.stashes.unshift(record);
+    fresh.payments[payment.signature] = { status: "stashed", at: record.at, stashSignature: signature };
+    save(fresh);
+    return { ...record, spentUsdc: usdcBefore - (await balance(owner, USDC_MINT)) };
+  } finally {
+    inFlight.delete(payment.signature);
   }
-  const signature = await connection.sendRawTransaction(built.transaction.serialize(), { skipPreflight: true });
-  const confirmation = await connection.confirmTransaction(signature, "confirmed");
-  if (confirmation.value.err) throw new Error(`The stash failed on chain. Signature ${signature}`);
+};
 
-  const record = {
-    signature,
-    at: new Date().toISOString(),
-    paymentUsdc: paymentUsdc.toString(),
-    stashUsdc: allocation.stashUsdc.toString(),
-    legs: allocation.legs.map((l) => ({ symbol: l.symbol, usdc: l.usdc.toString() })),
-    computeUnits: sim.value.unitsConsumed ?? null,
-    bytes: built.bytes,
-  };
-  const fresh = load();
-  fresh.stashes.unshift(record);
-  save(fresh);
-  return { ...record, spentUsdc: usdcBefore - (await balance(owner, USDC_MINT)) };
+/** Leaves a payment in USDC. It stops being offered for stashing. */
+routes["POST /api/skip"] = async (req) => {
+  const payment = await requirePayment(await readJson(req));
+  const state = load();
+  state.payments[payment.signature] = { status: "skipped", at: new Date().toISOString() };
+  save(state);
+  return { ok: true };
 };
 
 /**
- * Fork only: pretend a payment arrived by adding fake USDC to the wallet.
- * This stands in for "you got paid" until real wallets are connected.
+ * Fork only: someone pays you. The test payer sends a real USDC transfer,
+ * which then shows up in /api/payments exactly as a client's payment would.
  */
 routes["POST /api/receive"] = async (req) => {
   const amount = usdcField(await readJson(req), "usdc");
   if (amount <= 0n || amount > 100_000_000_000n) throw new Error("Receive between $0 and $100,000 of fake USDC.");
-  const owner = wallet.publicKey.toBase58();
-  const next = (await balance(owner, USDC_MINT)) + amount;
-  await setTokenBalance(owner, USDC_MINT, next, TOKEN_PROGRAM_ID);
-  return { receivedUsdc: amount, usdc: next };
+  const signature = await sendUsdc(connection, payer, wallet.publicKey.toBase58(), amount);
+  return { receivedUsdc: amount, signature };
 };
 
 async function serveStatic(path: string, res: ServerResponse): Promise<void> {
