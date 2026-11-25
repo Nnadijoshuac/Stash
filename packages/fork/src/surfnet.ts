@@ -65,3 +65,37 @@ export async function setLamports(account: string, lamports: number): Promise<vo
 export async function setTokenBalance(owner: string, mint: string, amount: bigint, tokenProgram: string): Promise<void> {
   await rpc("surfnet_setTokenAccount", [owner, mint, { amount: Number(amount) }, tokenProgram]);
 }
+
+/** Re-pulls one account from mainnet, replacing the fork's copy. */
+export async function resetAccount(account: string): Promise<void> {
+  await rpc("surfnet_resetAccount", [account]);
+}
+
+/**
+ * Brings a route's pools up to date with mainnet before a stash is sent.
+ *
+ * The fork clones each pool the first time it is touched and never updates
+ * it. Jupiter quotes against live mainnet. Oracle-priced venues such as GoonFi
+ * then reject the swap (custom error 0x15) because the fork's copy is minutes
+ * or hours old (ISSUES #7). Re-pulling the route's accounts just before
+ * simulating closes that gap.
+ *
+ * Skipped:
+ * - Sysvars and the system program: surfpool kills itself if asked to
+ *   overwrite one (learned in Draw).
+ * - Well-known program ids.
+ * - `keep`: the wallet's and treasury's own token accounts, which hold the
+ *   fake balances the cheatcodes wrote. Resetting those would wipe them.
+ */
+export async function refreshRoute(accounts: string[], keep: Iterable<string>): Promise<number> {
+  const protectedSet = new Set(keep);
+  const targets = accounts.filter(
+    (a) =>
+      !protectedSet.has(a) &&
+      !a.startsWith("Sysvar") &&
+      a !== "11111111111111111111111111111111" &&
+      !/^(Token|ATokenGPvb|ComputeBudget|AddressLookupTab1e|JUP6Lkb)/.test(a),
+  );
+  for (const a of targets) await resetAccount(a);
+  return targets.length;
+}

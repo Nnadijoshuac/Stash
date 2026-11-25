@@ -5,3 +5,4 @@
  */
 export * from "./surfnet";
 export * from "./keys";
+export * from "./protect";

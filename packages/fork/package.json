@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@solana/web3.js": "^1.95.4"
+    "@solana/web3.js": "^1.95.4",
+    "@stash/core": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
