@@ -12,7 +12,8 @@
     "test": "pnpm -r test",
     "basket-size": "pnpm --filter @stash/scripts basket-size",
     "fund": "pnpm --filter @stash/scripts fund",
-    "stash": "pnpm --filter @stash/scripts stash"
+    "stash": "pnpm --filter @stash/scripts stash",
+    "web": "pnpm --filter @stash/web start"
   },
   "devDependencies": {
     "typescript": "^5.6.3"
