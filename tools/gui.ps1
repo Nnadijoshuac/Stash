@@ -18,7 +18,7 @@
     .\tools\gui.ps1 scroll -Delta -5
 #>
 param(
-  [Parameter(Mandatory)][ValidateSet('open','focus','shot','click','type','key','scroll','info')][string]$Action,
+  [Parameter(Mandatory)][ValidateSet('open','focus','resize','shot','click','type','key','scroll','info')][string]$Action,
   [string]$Title,
   [string]$Url,
   [string]$Out,
@@ -27,6 +27,8 @@ param(
   [string]$Text,
   [string]$Keys,
   [int]$Delta,
+  [int]$Width,
+  [int]$Height,
   [switch]$Extended
 )
 
@@ -106,6 +108,19 @@ switch ($Action) {
     [void][GuiNative]::ShowWindow($h, 3)
     [void][GuiNative]::SetForegroundWindow($h)
     "focused '$Title' on $($screen.DeviceName)"
+  }
+
+  'resize' {
+    # Shrinks the window titled -Title to -Width x -Height at the screen's
+    # top-left, to see phone and tablet layouts. Browsers have a minimum
+    # window width (about 500px), so true phone widths need a headless
+    # screenshot instead.
+    $h = [GuiNative]::FindByTitle($Title, ' - Brave')
+    if ($h -eq [IntPtr]::Zero) { throw "No Brave window titled like '$Title'." }
+    [void][GuiNative]::ShowWindow($h, 9)
+    [void][GuiNative]::MoveWindow($h, $b.X, $b.Y, $Width, $Height, $true)
+    [void][GuiNative]::SetForegroundWindow($h)
+    "resized '$Title' to ${Width}x${Height}"
   }
 
   'shot' {
