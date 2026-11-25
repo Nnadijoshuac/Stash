@@ -9,8 +9,8 @@
  */
 import { STOCKS, TOKEN_2022_PROGRAM_ID, USDC_MINT, formatUsdc } from "@stash/core";
 import { TOKEN_PROGRAM_ID } from "@stash/core";
-import { assertSurfnet, setLamports, setTokenBalance, SURFNET_RPC_URL } from "./surfnet";
-import { loadOrCreateKeypair } from "./keys";
+import { assertSurfnet, setLamports, setTokenBalance, SURFNET_RPC_URL } from "@stash/fork";
+import { loadOrCreateKeypair } from "@stash/fork";
 
 const WALLET_SOL = 10 * 1e9;
 const TREASURY_SOL = 1 * 1e9;

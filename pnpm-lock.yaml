@@ -31,6 +31,19 @@ importers:
         specifier: ^2.1.5
         version: 2.1.9(@types/node@26.6.6)
 
+  packages/fork:
+    dependencies:
+      '@solana/web3.js':
+        specifier: ^1.95.4
+        version: 1.99.0(bufferutil@4.2.0)(typescript@5.9.3)(utf-8-validate@6.1.0)
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.0
+        version: 22.20.5
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+
   packages/scripts:
     dependencies:
       '@solana/web3.js':
@@ -39,6 +52,9 @@ importers:
       '@stash/core':
         specifier: workspace:*
         version: link:../core
+      '@stash/fork':
+        specifier: workspace:*
+        version: link:../fork
     devDependencies:
       '@types/node':
         specifier: ^22.10.0

@@ -11,7 +11,8 @@
   },
   "dependencies": {
     "@stash/core": "workspace:*",
-    "@solana/web3.js": "^1.95.4"
+    "@solana/web3.js": "^1.95.4",
+    "@stash/fork": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

@@ -21,8 +21,8 @@ import {
   treasuryFeeAccount,
   type StashRule,
 } from "@stash/core";
-import { SURFNET_RPC_URL, assertSurfnet } from "./surfnet";
-import { loadOrCreateKeypair } from "./keys";
+import { SURFNET_RPC_URL, assertSurfnet } from "@stash/fork";
+import { loadOrCreateKeypair } from "@stash/fork";
 
 const SPY = "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W";
 const NVDA = "Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh";
