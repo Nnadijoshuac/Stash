@@ -112,7 +112,13 @@ one transaction per stock, and this chapter will say so._
 
 ## 05 · Edge cases
 
-- **Who can hold xStocks.** The issuer excludes US persons and some regions. Stash will show this before the first stash, not after.
+- **Who can hold xStocks.** Not everyone. Kraken's
+  [xStocks FAQ](https://support.kraken.com/articles/xstocks-faq) says they are not accessible in
+  the US or to US persons, Canada, the UK or Australia, and holding them in a self-custody wallet
+  does not change that. Stash asks you to confirm before your first stash, not after.
+- **xStocks are not Solana-only.** They are also issued on Ethereum, TON and Ink. What Stash
+  depends on Solana for is narrower and measurable: a whole basket, routed by Jupiter, filled in one
+  atomic transaction for a fraction of a cent, on a Sunday as easily as a Tuesday.
 - **Who can freeze.** xStocks are Token-2022 mints with an issuer authority. The value read off the mint will be quoted here, as Draw did.
 - **A tokenized share is a claim on a share.** It is not the share itself.
 
