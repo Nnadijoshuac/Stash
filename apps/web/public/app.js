@@ -21,6 +21,10 @@ const shares = (amount, decimals) => (Number(amount) / 10 ** decimals).toFixed(6
 function showError(message) {
   $("error").textContent = message;
   $("error").hidden = !message;
+  // The error box sits at the top of the page. Without this, a refusal from a
+  // form further down happens out of sight and looks like nothing happened
+  // (found by the GUI test, ISSUES #8).
+  if (message) $("error").scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
 async function api(path, body) {
