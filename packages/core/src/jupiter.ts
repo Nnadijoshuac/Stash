@@ -85,6 +85,39 @@ export async function quoteLeg(params: QuoteParams): Promise<JupiterQuote> {
   return quote;
 }
 
+export interface SellQuoteParams {
+  inputMint: string;
+  /** Stock base units to sell (xStocks have 8 decimals). */
+  amount: bigint;
+  platformFeeBps?: number;
+  slippageBps?: number;
+  maxAccounts?: number;
+}
+
+/**
+ * Quotes selling an allowlisted stock back to USDC. On an ExactIn swap the
+ * platform fee is taken in the output mint, so here it is paid in USDC and
+ * the fee account is the treasury's USDC account.
+ */
+export async function quoteSell(params: SellQuoteParams): Promise<JupiterQuote> {
+  stockForMint(params.inputMint);
+  if (params.amount <= 0n) throw new Error("Choose an amount of the stock to sell.");
+  const q = new URLSearchParams({
+    inputMint: params.inputMint,
+    outputMint: USDC_MINT,
+    amount: params.amount.toString(),
+    swapMode: "ExactIn",
+    slippageBps: String(params.slippageBps ?? DEFAULT_SLIPPAGE_BPS),
+    platformFeeBps: String(params.platformFeeBps ?? DEFAULT_PLATFORM_FEE_BPS),
+    maxAccounts: String(params.maxAccounts ?? DEFAULT_ROUTE_MAX_ACCOUNTS),
+  });
+  const quote = await call<JupiterQuote>(`${JUPITER_API_URL}/quote?${q}`);
+  if (quote.inputMint !== params.inputMint || quote.outputMint !== USDC_MINT) {
+    throw new Error("Jupiter returned a quote for different tokens than were asked for.");
+  }
+  return quote;
+}
+
 /**
  * Turns a quote into instructions for `owner`.
  *
@@ -98,7 +131,12 @@ export async function swapInstructions(
   owner: string,
   feeAccount: string,
 ): Promise<JupiterSwapInstructions> {
-  stockForMint(quote.outputMint);
+  // One side of every swap Stash builds must be an allowlisted stock and the
+  // other must be USDC: buying (USDC -> stock) or selling (stock -> USDC).
+  const stockSide = quote.inputMint === USDC_MINT ? quote.outputMint : quote.inputMint;
+  const otherSide = quote.inputMint === USDC_MINT ? quote.inputMint : quote.outputMint;
+  stockForMint(stockSide);
+  if (otherSide !== USDC_MINT) throw new Error("Stash only swaps between USDC and allowlisted stocks.");
   return call<JupiterSwapInstructions>(`${JUPITER_API_URL}/swap-instructions`, {
     method: "POST",
     headers: { "content-type": "application/json" },
