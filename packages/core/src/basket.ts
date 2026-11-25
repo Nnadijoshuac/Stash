@@ -26,11 +26,15 @@ import {
 import { quoteLeg, swapInstructions, toInstruction, type JupiterQuote } from "./jupiter";
 
 /**
- * The compute budget requested for a basket. Three Jupiter swaps have not
- * been simulated yet (ISSUES #4), so this asks for the per-transaction
- * maximum until a measurement replaces it.
+ * The compute budget requested for a basket.
+ *
+ * Measured on a mainnet fork on 25 Nov 2026 (ISSUES #4): two legs used
+ * 197,063 units, three legs 252,633. Routes vary per quote, so this keeps
+ * roughly 2x headroom over the three-leg figure instead of asking for the
+ * 1.4M maximum, which would make every stash pay priority fees on compute
+ * it never uses.
  */
-export const BASKET_COMPUTE_UNIT_LIMIT = 1_400_000;
+export const BASKET_COMPUTE_UNIT_LIMIT = 500_000;
 export const BASKET_COMPUTE_UNIT_PRICE_MICROLAMPORTS = 1_000;
 
 export interface PackInput {
