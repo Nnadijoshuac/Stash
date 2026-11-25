@@ -15,6 +15,7 @@ import { loadOrCreateKeypair } from "@stash/fork";
 const WALLET_SOL = 10 * 1e9;
 const TREASURY_SOL = 1 * 1e9;
 const WALLET_USDC = 1_000_000_000n; // $1,000 of fake USDC
+const PAYER_USDC = 100_000_000_000n; // $100,000 of fake USDC to pay the user with
 
 await assertSurfnet();
 const wallet = loadOrCreateKeypair("wallet").publicKey.toBase58();
@@ -32,4 +33,12 @@ for (const s of STOCKS) {
   await setTokenBalance(treasury, s.mint, 0n, TOKEN_2022_PROGRAM_ID);
 }
 console.log(`  treasury  ${treasury}: 1 SOL, fee accounts for ${STOCKS.map((s) => s.symbol).join(", ")}`);
+
+// A test payer that sends real token transfers, so payments show up on chain
+// the way a client's or a hackathon's would.
+const payer = loadOrCreateKeypair("payer").publicKey.toBase58();
+await setLamports(payer, WALLET_SOL);
+await setTokenBalance(payer, USDC_MINT, PAYER_USDC, TOKEN_PROGRAM_ID);
+console.log(`  payer     ${payer}: 10 SOL, ${formatUsdc(PAYER_USDC)} USDC`);
+
 console.log(`\nFunded on ${SURFNET_RPC_URL}. Fake money only.`);
