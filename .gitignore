@@ -1,0 +1,48 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# builds
+# Unanchored patterns match at any depth, and "build/" was quietly excluding
+# the app/api/tx/build route. Keep these rooted.
+/dist/
+packages/*/dist/
+.next/
+out/
+*.tsbuildinfo
+
+# env
+.env
+.env.local
+.env.*.local
+
+# keys — never commit these
+*.keypair.json
+keys/
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# editors
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+
+# os
+.DS_Store
+Thumbs.db
+
+# test output
+coverage/
+
+# surfpool
+.surfpool/
+
+# runtime state written by pnpm reset
+.stash/
+
+# working notes, not shipped
+HACKATHON.md
