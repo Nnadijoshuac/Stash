@@ -32,7 +32,9 @@ await setLamports(treasury, TREASURY_SOL);
 for (const s of STOCKS) {
   await setTokenBalance(treasury, s.mint, 0n, TOKEN_2022_PROGRAM_ID);
 }
-console.log(`  treasury  ${treasury}: 1 SOL, fee accounts for ${STOCKS.map((s) => s.symbol).join(", ")}`);
+// Selling back to USDC pays the fee in USDC, into this account.
+await setTokenBalance(treasury, USDC_MINT, 0n, TOKEN_PROGRAM_ID);
+console.log(`  treasury  ${treasury}: 1 SOL, fee accounts for ${STOCKS.map((s) => s.symbol).join(", ")} and USDC`);
 
 // A test payer that sends real token transfers, so payments show up on chain
 // the way a client's or a hackathon's would.
