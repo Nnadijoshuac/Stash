@@ -30,7 +30,7 @@ import {
   assertSurfnet,
   loadOrCreateKeypair,
   protectedAccounts,
-  refreshRoute,
+  prepareForkForSend,
   sendUsdc,
 } from "@stash/fork";
 import { load, save } from "./store";
@@ -187,13 +187,28 @@ routes["POST /api/stash"] = async (req) => {
     const usdcBefore = await balance(owner, USDC_MINT);
     if (usdcBefore < allocation.stashUsdc) throw new Error("Not enough USDC in the wallet for this stash.");
 
-    const built = await buildBasket({ connection, owner, treasury, allocation });
-    // Fork mode: bring the route's pools up to date with mainnet first (ISSUES #7).
-    await refreshRoute(built.routeAccounts, protectedAccounts(owner, treasury));
-    built.transaction.sign([wallet]);
-    const sim = await connection.simulateTransaction(built.transaction, { sigVerify: true });
-    if (sim.value.err) {
-      throw new Error(`The network would reject this stash (${JSON.stringify(sim.value.err)}). Nothing was sent.`);
+    // Quotes go stale and routes differ from quote to quote. If the network
+    // would reject the first build, re-quote (usually a different route) and
+    // try once more. Nothing is sent unless a simulation passes (ISSUES #10).
+    let built: Awaited<ReturnType<typeof buildBasket>> | null = null;
+    let unitsConsumed: number | undefined;
+    let lastError = "";
+    for (let attempt = 1; attempt <= 2 && !built; attempt++) {
+      const candidate = await buildBasket({ connection, owner, treasury, allocation });
+      // Fork mode: sync the clock and refresh the route's pools first (ISSUES #7, #10).
+      await prepareForkForSend(candidate.routeAccounts, protectedAccounts(owner, treasury));
+      candidate.transaction.sign([wallet]);
+      const sim = await connection.simulateTransaction(candidate.transaction, { sigVerify: true });
+      if (sim.value.err) {
+        lastError = JSON.stringify(sim.value.err);
+        console.log(`stash attempt ${attempt} rejected in simulation: ${lastError}`);
+        continue;
+      }
+      built = candidate;
+      unitsConsumed = sim.value.unitsConsumed;
+    }
+    if (!built) {
+      throw new Error(`The network would reject this stash, even with fresh quotes (${lastError}). Nothing was sent.`);
     }
     const signature = await connection.sendRawTransaction(built.transaction.serialize(), { skipPreflight: true });
     const confirmation = await connection.confirmTransaction(signature, "confirmed");
@@ -206,7 +221,7 @@ routes["POST /api/stash"] = async (req) => {
       paymentUsdc: payment.amountUsdc.toString(),
       stashUsdc: allocation.stashUsdc.toString(),
       legs: allocation.legs.map((l) => ({ symbol: l.symbol, usdc: l.usdc.toString() })),
-      computeUnits: sim.value.unitsConsumed ?? null,
+      computeUnits: unitsConsumed ?? null,
       bytes: built.bytes,
     };
     const fresh = load();
