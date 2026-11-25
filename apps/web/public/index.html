@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Stash</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header>
+    <h1>Stash</h1>
+    <p>Get paid in dollars. Keep some of it in stocks.</p>
+    <p class="note" id="network">Connecting…</p>
+  </header>
+
+  <p id="error" class="error" hidden></p>
+
+  <section id="eligibility" hidden>
+    <h2>Before your first stash</h2>
+    <p>xStocks are not available to US persons, or to people in Canada, the UK or Australia.</p>
+    <label><input type="checkbox" id="eligible-check"> I am eligible to hold xStocks.</label>
+    <button id="eligible-btn">Confirm</button>
+  </section>
+
+  <section>
+    <h2>Balances</h2>
+    <table>
+      <thead><tr><th>Asset</th><th>Tracks</th><th>Amount</th></tr></thead>
+      <tbody id="balances"></tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>1. Your rule</h2>
+    <p id="rule-summary">No rule yet.</p>
+    <form id="rule-form">
+      <label>Stash <input type="number" id="stash-pct" min="1" max="100" step="1" value="20"> % of every payment</label>
+      <div id="basket-rows"></div>
+      <p class="note">Up to 3 stocks. Shares must add up to 100%.</p>
+      <button type="submit">Save rule</button>
+    </form>
+  </section>
+
+  <section>
+    <h2>2. Get paid <span class="note">(fork only: adds fake USDC)</span></h2>
+    <form id="receive-form">
+      <label>$ <input type="text" id="receive-amount" value="500" inputmode="decimal"></label>
+      <button type="submit">Receive</button>
+    </form>
+  </section>
+
+  <section>
+    <h2>3. Stash it</h2>
+    <form id="preview-form">
+      <label>Payment $ <input type="text" id="payment-amount" value="500" inputmode="decimal"></label>
+      <button type="submit">Preview</button>
+    </form>
+    <div id="preview"></div>
+    <button id="stash-btn" hidden>Stash now</button>
+    <div id="result"></div>
+  </section>
+
+  <section>
+    <h2>History</h2>
+    <ol id="history"><li>No stashes yet.</li></ol>
+  </section>
+
+  <script src="/app.js"></script>
+</body>
+</html>
