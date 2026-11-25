@@ -147,6 +147,12 @@ export interface BuildBasketInput {
 
 export interface BuiltBasket extends Packed {
   quotes: JupiterQuote[];
+  /**
+   * Every account the swap instructions read or write: pools, oracles,
+   * vaults, and the user's own token accounts. A local fork uses this list to
+   * re-pull pool state from mainnet before sending (ISSUES #7).
+   */
+  routeAccounts: string[];
 }
 
 /** Quotes every leg, fetches Jupiter's instructions and lookup tables, then packs. */
@@ -155,6 +161,7 @@ export async function buildBasket(input: BuildBasketInput): Promise<BuiltBasket>
   const setup: TransactionInstruction[][] = [];
   const swaps: TransactionInstruction[] = [];
   const tableAddresses = new Set<string>();
+  const routeAccounts = new Set<string>();
 
   for (const leg of input.allocation.legs) {
     const quote = await quoteLeg({
@@ -170,6 +177,7 @@ export async function buildBasket(input: BuildBasketInput): Promise<BuiltBasket>
     quotes.push(quote);
     setup.push(ixs.setupInstructions.map(toInstruction));
     swaps.push(toInstruction(ixs.swapInstruction));
+    ixs.swapInstruction.accounts.forEach((a) => routeAccounts.add(a.pubkey));
     ixs.addressLookupTableAddresses.forEach((a) => tableAddresses.add(a));
   }
 
@@ -187,5 +195,5 @@ export async function buildBasket(input: BuildBasketInput): Promise<BuiltBasket>
     lookupTables,
     recentBlockhash: blockhash,
   });
-  return { ...packed, quotes };
+  return { ...packed, quotes, routeAccounts: [...routeAccounts] };
 }
