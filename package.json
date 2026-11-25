@@ -14,7 +14,8 @@
     "fund": "pnpm --filter @stash/scripts fund",
     "stash": "pnpm --filter @stash/scripts stash",
     "web": "pnpm --filter @stash/web start",
-    "payment": "pnpm --filter @stash/scripts payment"
+    "payment": "pnpm --filter @stash/scripts payment",
+    "sell": "pnpm --filter @stash/scripts sell"
   },
   "devDependencies": {
     "typescript": "^5.6.3"
