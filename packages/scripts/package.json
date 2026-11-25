@@ -7,7 +7,8 @@
     "typecheck": "tsc --noEmit",
     "basket-size": "tsx src/e2e-basket-size.ts",
     "fund": "tsx src/fund.ts",
-    "stash": "tsx src/e2e-stash.ts"
+    "stash": "tsx src/e2e-stash.ts",
+    "payment": "tsx src/e2e-payment.ts"
   },
   "dependencies": {
     "@stash/core": "workspace:*",
