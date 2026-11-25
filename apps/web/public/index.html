@@ -4,77 +4,108 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Stash</title>
+  <link rel="icon" type="image/png" href="/brand/stash-splat-64.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <header>
-    <h1>Stash</h1>
-    <p>Get paid in dollars. Keep some of it in stocks.</p>
-    <p class="note" id="network">Connecting…</p>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="Stash home">
+      <img src="/brand/stash-splat-64.png" alt="" width="32" height="32">
+      <span>Stash</span>
+    </a>
+    <div class="topbar-right">
+      <span class="badge">Mainnet fork · fake money</span>
+      <span class="wallet" id="wallet-chip" title="Fork test wallet. Its key stays in this browser.">…</span>
+    </div>
   </header>
 
-  <p id="error" class="error" hidden></p>
+  <p id="error" class="error" role="alert" hidden></p>
 
-  <section id="eligibility" hidden>
-    <h2>Before your first stash</h2>
-    <p>xStocks are not available to US persons, or to people in Canada, the UK or Australia.</p>
-    <label><input type="checkbox" id="eligible-check"> I am eligible to hold xStocks.</label>
-    <button id="eligible-btn">Confirm</button>
+  <!-- First run: eligibility, before anything else. -->
+  <section id="onboard" class="onboard" hidden>
+    <div class="onboard-card">
+      <img src="/brand/stash-splat-192.png" alt="" width="96" height="96" class="onboard-splat">
+      <h1>Get paid in dollars.<br>Keep some of it in stocks.</h1>
+      <p>Set a rule once. Every payment you receive drops a share into stocks like the S&amp;P 500, in one transaction.</p>
+      <div class="notice">
+        xStocks are not available to US persons, or to people in Canada, the UK or Australia.
+      </div>
+      <label class="check"><input type="checkbox" id="eligible-check"> I am eligible to hold xStocks.</label>
+      <button class="btn btn-primary btn-lg" id="eligible-btn">Continue</button>
+    </div>
   </section>
 
-  <section>
-    <h2>Balances</h2>
-    <table>
-      <thead><tr><th>Asset</th><th>Tracks</th><th>Amount</th></tr></thead>
-      <tbody id="balances"></tbody>
-    </table>
-  </section>
+  <main class="app" id="app" hidden>
+    <div class="col-main">
+      <!-- The biggest number on screen: what has been stashed. -->
+      <section class="card ink hero">
+        <p class="eyebrow">Stashed so far</p>
+        <p class="big" id="stashed-total">$0.00</p>
+        <p class="hero-sub" id="hero-sub">&nbsp;</p>
+        <ul class="holdings" id="holdings"></ul>
+      </section>
 
-  <section>
-    <h2>1. Your rule</h2>
-    <p id="rule-summary">No rule yet.</p>
-    <form id="rule-form">
-      <label>Stash <input type="number" id="stash-pct" min="1" max="100" step="1" value="20"> % of every payment</label>
-      <div id="basket-rows"></div>
-      <p class="note">Up to 3 stocks. Shares must add up to 100%.</p>
-      <button type="submit">Save rule</button>
-    </form>
-  </section>
+      <section class="card">
+        <div class="card-head">
+          <h2>New payments</h2>
+          <span class="count" id="pending-count"></span>
+        </div>
+        <ul class="payments" id="payments"></ul>
+        <form class="fork-tool" id="receive-form">
+          <span class="fork-label">Fork only</span>
+          <span>Simulate getting paid</span>
+          <span class="money-input">$<input type="text" id="receive-amount" value="500" inputmode="decimal" aria-label="Amount in dollars"></span>
+          <button class="btn btn-quiet" type="submit" id="receive-btn">Receive</button>
+        </form>
+      </section>
 
-  <section>
-    <h2>2. Get paid <span class="note">(fork only: a test payer sends you real fake-USDC)</span></h2>
-    <form id="receive-form">
-      <label>$ <input type="text" id="receive-amount" value="500" inputmode="decimal"></label>
-      <button type="submit">Receive</button>
-    </form>
-  </section>
+      <section class="card">
+        <div class="card-head"><h2>Activity</h2></div>
+        <ol class="activity" id="activity"></ol>
+      </section>
+    </div>
 
-  <section>
-    <h2>3. Payments you received</h2>
-    <p class="note">Read from the chain. Pick one to stash; the amount always comes from the chain.</p>
-    <table>
-      <thead><tr><th>When</th><th class="num">Amount</th><th>From</th><th></th></tr></thead>
-      <tbody id="payments"><tr><td colspan="4">Loading…</td></tr></tbody>
-    </table>
-    <div id="preview"></div>
-    <button id="stash-btn" hidden>Stash now</button>
-    <div id="result"></div>
-  </section>
+    <aside class="col-side">
+      <section class="card rule-card">
+        <div class="card-head">
+          <h2>Your rule</h2>
+          <button class="btn btn-quiet btn-sm" id="rule-edit-btn" type="button">Edit</button>
+        </div>
+        <div id="rule-view"></div>
+        <form id="rule-form" class="rule-form" hidden>
+          <label class="range-label">
+            Stash <strong id="stash-pct-out">20%</strong> of every payment
+            <input type="range" id="stash-pct" min="1" max="100" step="1" value="20">
+          </label>
+          <div id="basket-rows"></div>
+          <p class="hint">Up to 3 stocks, adding up to 100%. Three is the most that fits one transaction.</p>
+          <div class="row-end">
+            <button class="btn btn-quiet" type="button" id="rule-cancel">Cancel</button>
+            <button class="btn btn-dark" type="submit">Save rule</button>
+          </div>
+        </form>
+      </section>
 
-  <section>
-    <h2>4. Sell back to USDC</h2>
-    <form id="sell-form">
-      <label>Sell <input type="number" id="sell-pct" min="1" max="100" step="1" value="50"> % of
-        <select id="sell-stock"></select></label>
-      <button type="submit">Sell</button>
-    </form>
-    <div id="sell-result"></div>
-  </section>
+      <section class="card fine">
+        <h2>How this demo runs</h2>
+        <p>This is a local copy of Solana mainnet with fake money. Pools and stock tokens are real
+          mainnet state; nothing here costs anything.</p>
+        <p>Your test wallet's key stays in this browser. Stash builds each transaction, your wallet
+          signs it, and Stash checks it is exactly what was built before sending.</p>
+      </section>
+    </aside>
+  </main>
 
-  <section>
-    <h2>History</h2>
-    <ol id="history"><li>No stashes yet.</li></ol>
-  </section>
+  <!-- Bottom sheet for preview, confirm, progress, success and selling. -->
+  <div class="sheet-backdrop" id="sheet" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+      <button class="sheet-close" id="sheet-close" aria-label="Close">×</button>
+      <div id="sheet-body"></div>
+    </div>
+  </div>
 
   <script src="/vendor/web3.js"></script>
   <script src="/app.js"></script>
