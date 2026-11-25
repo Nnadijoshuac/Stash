@@ -11,6 +11,8 @@ import type { StashRule } from "@stash/core";
 
 export interface StashRecord {
   signature: string;
+  /** The incoming payment this stash came from. */
+  paymentSignature: string;
   at: string;
   paymentUsdc: string;
   stashUsdc: string;
@@ -19,14 +21,22 @@ export interface StashRecord {
   bytes: number;
 }
 
+/** What the user decided about one incoming payment, keyed by its signature. */
+export interface PaymentDecision {
+  status: "stashed" | "skipped";
+  at: string;
+  stashSignature?: string;
+}
+
 export interface AppState {
   eligibleConfirmedAt: string | null;
   rule: StashRule | null;
   stashes: StashRecord[];
+  payments: Record<string, PaymentDecision>;
 }
 
 const FILE = join(resolve(dirname(fileURLToPath(import.meta.url)), "../../../.stash"), "app-state.json");
-const EMPTY: AppState = { eligibleConfirmedAt: null, rule: null, stashes: [] };
+const EMPTY: AppState = { eligibleConfirmedAt: null, rule: null, stashes: [], payments: {} };
 
 export function load(): AppState {
   if (!existsSync(FILE)) return structuredClone(EMPTY);
