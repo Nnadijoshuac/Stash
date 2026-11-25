@@ -396,7 +396,9 @@ routes["POST /api/receive"] = async (req) => {
 /* ---------------------------------------------------------------- server */
 
 async function serveStatic(path: string, res: ServerResponse): Promise<void> {
-  const file = path === "/vendor/web3.js" ? WEB3_IIFE : resolve(PUBLIC, "." + (path === "/" ? "/index.html" : path));
+  // "/" is the landing page; "/app" is the app itself.
+  const pages: Record<string, string> = { "/": "/landing.html", "/app": "/app.html", "/app/": "/app.html" };
+  const file = path === "/vendor/web3.js" ? WEB3_IIFE : resolve(PUBLIC, "." + (pages[path] ?? path));
   if (file !== WEB3_IIFE && !file.startsWith(PUBLIC)) return send(res, 404, { error: "Not found" });
   const types: Record<string, string> = { ".html": "text/html", ".css": "text/css", ".js": "text/javascript" };
   try {
