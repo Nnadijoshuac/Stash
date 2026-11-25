@@ -28,15 +28,24 @@ export interface PaymentDecision {
   stashSignature?: string;
 }
 
+export interface SellRecord {
+  signature: string;
+  at: string;
+  symbol: string;
+  soldAmount: string;
+  receivedUsdc: string;
+}
+
 export interface AppState {
   eligibleConfirmedAt: string | null;
   rule: StashRule | null;
   stashes: StashRecord[];
   payments: Record<string, PaymentDecision>;
+  sells: SellRecord[];
 }
 
 const FILE = join(resolve(dirname(fileURLToPath(import.meta.url)), "../../../.stash"), "app-state.json");
-const EMPTY: AppState = { eligibleConfirmedAt: null, rule: null, stashes: [], payments: {} };
+const EMPTY: AppState = { eligibleConfirmedAt: null, rule: null, stashes: [], payments: {}, sells: [] };
 
 export function load(): AppState {
   if (!existsSync(FILE)) return structuredClone(EMPTY);
