@@ -12,7 +12,7 @@ import { fileURLToPath } from "node:url";
 
 const KEYS_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "../../../keys");
 
-export function loadOrCreateKeypair(name: "wallet" | "treasury"): Keypair {
+export function loadOrCreateKeypair(name: "wallet" | "treasury" | "payer"): Keypair {
   const file = join(KEYS_DIR, `${name}.keypair.json`);
   if (existsSync(file)) {
     return Keypair.fromSecretKey(Uint8Array.from(JSON.parse(readFileSync(file, "utf8")) as number[]));

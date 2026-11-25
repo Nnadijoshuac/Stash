@@ -6,3 +6,4 @@
 export * from "./surfnet";
 export * from "./keys";
 export * from "./protect";
+export * from "./pay";
