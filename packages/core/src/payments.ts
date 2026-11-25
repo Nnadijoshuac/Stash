@@ -103,9 +103,25 @@ export async function listIncomingPayments(
         connection.getParsedTransaction(s.signature, { maxSupportedTransactionVersion: 0, commitment: "confirmed" }),
       ),
   );
-  return txs
+  const payments = txs
     .map((tx) => (tx ? incomingUsdc(tx as unknown as ParsedTxLike, owner) : null))
     .filter((p): p is IncomingPayment => p !== null);
+  return Promise.all(payments.map((p) => withPlausibleTime(connection, p)));
+}
+
+/** 2001-09-09. No Solana transaction is older, so anything earlier is a misreported time. */
+const EARLIEST_PLAUSIBLE_BLOCK_TIME = 1_000_000_000;
+
+/**
+ * Surfpool's getTransaction reports blockTime divided by 1,000 (1795630
+ * instead of 1795630902), so payments on the fork showed as January 1970
+ * (ISSUES #12). getBlockTime(slot) answers correctly there, so an impossible
+ * time is replaced from it. On mainnet this never triggers.
+ */
+async function withPlausibleTime(connection: Connection, p: IncomingPayment): Promise<IncomingPayment> {
+  if (p.blockTime !== null && p.blockTime >= EARLIEST_PLAUSIBLE_BLOCK_TIME) return p;
+  const blockTime = await connection.getBlockTime(p.slot).catch(() => null);
+  return { ...p, blockTime: blockTime !== null && blockTime >= EARLIEST_PLAUSIBLE_BLOCK_TIME ? blockTime : null };
 }
 
 /** Looks up one payment by signature, re-reading it from the chain. */
@@ -115,5 +131,6 @@ export async function getIncomingPayment(
   signature: string,
 ): Promise<IncomingPayment | null> {
   const tx = await connection.getParsedTransaction(signature, { maxSupportedTransactionVersion: 0, commitment: "confirmed" });
-  return tx ? incomingUsdc(tx as unknown as ParsedTxLike, owner) : null;
+  const payment = tx ? incomingUsdc(tx as unknown as ParsedTxLike, owner) : null;
+  return payment ? withPlausibleTime(connection, payment) : null;
 }
