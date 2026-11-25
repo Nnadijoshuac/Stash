@@ -92,9 +92,16 @@ export async function listIncomingPayments(
   const usdcAccount = associatedTokenAddress(owner, USDC_MINT, TOKEN_PROGRAM_ID);
   const sigs = await connection.getSignaturesForAddress(new PublicKey(usdcAccount), { limit: options.limit ?? 25 });
   if (sigs.length === 0) return [];
-  const txs = await connection.getParsedTransactions(
-    sigs.map((s) => s.signature),
-    { maxSupportedTransactionVersion: 0, commitment: "confirmed" },
+  // One request per transaction, not getParsedTransactions: that sends a
+  // JSON-RPC batch, which surfpool (and some RPC providers) do not accept, and
+  // web3.js then crashes with "unsafeRes.map is not a function" (ISSUES #9).
+  // Failed transactions are skipped up front; they can never be payments.
+  const txs = await Promise.all(
+    sigs
+      .filter((s) => !s.err)
+      .map((s) =>
+        connection.getParsedTransaction(s.signature, { maxSupportedTransactionVersion: 0, commitment: "confirmed" }),
+      ),
   );
   return txs
     .map((tx) => (tx ? incomingUsdc(tx as unknown as ParsedTxLike, owner) : null))
