@@ -1,12 +1,20 @@
 /**
- * The app's saved state: whether the user confirmed eligibility, their rule,
- * and the stashes they have made. One JSON file under .stash/ (gitignored),
- * because this barebones app has one user, the fork's test wallet.
- * A database comes with real accounts, not before.
+ * Saved state per wallet: eligibility, the rule, payment decisions, and the
+ * history of stashes and sales.
+ *
+ * One JSON file per owner under .stash/users/ (gitignored). The server holds
+ * no keys, so state is keyed by the public key the browser presents; anyone
+ * can read state for a public key, which is fine because it only describes
+ * public on-chain activity and preferences. A database comes with real
+ * accounts and sessions, not before.
+ *
+ * Changed 25 Nov from a single app-state.json when signing moved to the
+ * browser and one server started serving many wallets (agent LOG).
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { PublicKey } from "@solana/web3.js";
 import type { StashRule } from "@stash/core";
 
 export interface StashRecord {
@@ -44,15 +52,30 @@ export interface AppState {
   sells: SellRecord[];
 }
 
-const FILE = join(resolve(dirname(fileURLToPath(import.meta.url)), "../../../.stash"), "app-state.json");
+const DIR = join(resolve(dirname(fileURLToPath(import.meta.url)), "../../../.stash"), "users");
 const EMPTY: AppState = { eligibleConfirmedAt: null, rule: null, stashes: [], payments: {}, sells: [] };
 
-export function load(): AppState {
-  if (!existsSync(FILE)) return structuredClone(EMPTY);
-  return { ...structuredClone(EMPTY), ...(JSON.parse(readFileSync(FILE, "utf8")) as Partial<AppState>) };
+/**
+ * The owner as a canonical base58 public key. Refuses anything else, which
+ * also keeps a crafted "owner" from naming a path outside .stash/users.
+ */
+export function ownerKey(owner: unknown): string {
+  try {
+    return new PublicKey(String(owner ?? "")).toBase58();
+  } catch {
+    throw new Error("Connect a wallet first.");
+  }
 }
 
-export function save(state: AppState): void {
-  mkdirSync(dirname(FILE), { recursive: true });
-  writeFileSync(FILE, JSON.stringify(state, null, 2));
+const fileFor = (owner: string) => join(DIR, `${ownerKey(owner)}.json`);
+
+export function load(owner: string): AppState {
+  const file = fileFor(owner);
+  if (!existsSync(file)) return structuredClone(EMPTY);
+  return { ...structuredClone(EMPTY), ...(JSON.parse(readFileSync(file, "utf8")) as Partial<AppState>) };
+}
+
+export function save(owner: string, state: AppState): void {
+  mkdirSync(DIR, { recursive: true });
+  writeFileSync(fileFor(owner), JSON.stringify(state, null, 2));
 }
