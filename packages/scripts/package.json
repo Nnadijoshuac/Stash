@@ -9,7 +9,8 @@
     "fund": "tsx src/fund.ts",
     "stash": "tsx src/e2e-stash.ts",
     "payment": "tsx src/e2e-payment.ts",
-    "sell": "tsx src/e2e-sell.ts"
+    "sell": "tsx src/e2e-sell.ts",
+    "api": "tsx src/e2e-api.ts"
   },
   "dependencies": {
     "@stash/core": "workspace:*",
