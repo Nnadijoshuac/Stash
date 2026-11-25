@@ -46,3 +46,6 @@ coverage/
 
 # working notes, not shipped
 HACKATHON.md
+
+# agent working notes: local only, never pushed (owner request, 25 Nov)
+agent/
