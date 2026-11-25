@@ -62,10 +62,21 @@
   </section>
 
   <section>
+    <h2>4. Sell back to USDC</h2>
+    <form id="sell-form">
+      <label>Sell <input type="number" id="sell-pct" min="1" max="100" step="1" value="50"> % of
+        <select id="sell-stock"></select></label>
+      <button type="submit">Sell</button>
+    </form>
+    <div id="sell-result"></div>
+  </section>
+
+  <section>
     <h2>History</h2>
     <ol id="history"><li>No stashes yet.</li></ol>
   </section>
 
+  <script src="/vendor/web3.js"></script>
   <script src="/app.js"></script>
 </body>
 </html>
