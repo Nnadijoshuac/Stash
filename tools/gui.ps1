@@ -44,6 +44,21 @@ public static class GuiNative {
   [DllImport("user32.dll")] public static extern bool MoveWindow(IntPtr h, int x, int y, int w, int hgt, bool r);
   [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
   [DllImport("user32.dll")] public static extern void keybd_event(byte k, byte s, uint f, UIntPtr e);
+  public delegate bool EnumProc(IntPtr h, IntPtr l);
+  [DllImport("user32.dll")] public static extern bool EnumWindows(EnumProc cb, IntPtr l);
+  [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr h);
+  [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetWindowText(IntPtr h, System.Text.StringBuilder s, int n);
+  /** First visible top-level window whose title contains `part`. */
+  public static IntPtr FindByTitle(string part) {
+    IntPtr found = IntPtr.Zero;
+    EnumWindows((h, l) => {
+      if (!IsWindowVisible(h)) return true;
+      var sb = new System.Text.StringBuilder(512); GetWindowText(h, sb, 512);
+      if (sb.ToString().Contains(part)) { found = h; return false; }
+      return true;
+    }, IntPtr.Zero);
+    return found;
+  }
 }
 '@
 [void][GuiNative]::SetProcessDpiAwarenessContext([IntPtr]-4)
@@ -59,34 +74,37 @@ switch ($Action) {
   'info' { "$($screen.DeviceName) $($b.X),$($b.Y) $($b.Width)x$($b.Height)" }
 
   'open' {
+    # Opens the URL in a new Brave window, then moves ONLY a window whose title
+    # contains -Title (default 'Stash'). It never touches any other window, so
+    # the owner's YouTube or anything else in Brave stays where it is
+    # (ISSUES #11).
+    if (-not $Title) { $Title = 'Stash' }
     Start-Process 'C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe' -ArgumentList '--new-window', $Url
     $h = [IntPtr]::Zero
-    for ($i = 0; $i -lt 40; $i++) {
+    for ($i = 0; $i -lt 40 -and $h -eq [IntPtr]::Zero; $i++) {
       Start-Sleep -Milliseconds 250
-      $fg = [GuiNative]::GetForegroundWindow(); $procId = 0
-      [void][GuiNative]::GetWindowThreadProcessId($fg, [ref]$procId)
-      if ((Get-Process -Id $procId -ErrorAction SilentlyContinue).ProcessName -eq 'brave') { $h = $fg; break }
+      $h = [GuiNative]::FindByTitle("$Title - Brave")
     }
-    if ($h -eq [IntPtr]::Zero) { throw 'Opened the URL but could not find the Brave window.' }
-    [void][GuiNative]::ShowWindow($h, 9)
-    [void][GuiNative]::MoveWindow($h, $b.X, $b.Y, $b.Width, $b.Height, $true)
-    [void][GuiNative]::ShowWindow($h, 3)
-    "opened $Url on $($screen.DeviceName)"
-  }
-
-  'focus' {
-    # Bring the browser window whose title contains -Title to the front, on the
-    # chosen screen, maximised. Safer than clicking: keys then go to the app,
-    # not to whatever happened to be in front (ISSUES #11).
-    $p = Get-Process brave, chrome -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle -like "*$Title*" } | Select-Object -First 1
-    if (-not $p) { throw "No Brave or Chrome window titled like '$Title'." }
-    $h = $p.MainWindowHandle
+    if ($h -eq [IntPtr]::Zero) { throw "Opened $Url but found no window titled '$Title - Brave'. Nothing was moved." }
     [GuiNative]::keybd_event(0x12, 0, 0, [UIntPtr]::Zero); [GuiNative]::keybd_event(0x12, 0, 2, [UIntPtr]::Zero)
     [void][GuiNative]::ShowWindow($h, 9)
     [void][GuiNative]::MoveWindow($h, $b.X, $b.Y, $b.Width, $b.Height, $true)
     [void][GuiNative]::ShowWindow($h, 3)
     [void][GuiNative]::SetForegroundWindow($h)
-    "focused '$($p.MainWindowTitle)' on $($screen.DeviceName)"
+    "opened $Url in the '$Title' window on $($screen.DeviceName)"
+  }
+
+  'focus' {
+    # Brings the window whose title contains -Title to the front on the chosen
+    # screen. Keys then go to the app, not to whatever was in front.
+    $h = [GuiNative]::FindByTitle("$Title - Brave")
+    if ($h -eq [IntPtr]::Zero) { throw "No Brave window titled '$Title - Brave'." }
+    [GuiNative]::keybd_event(0x12, 0, 0, [UIntPtr]::Zero); [GuiNative]::keybd_event(0x12, 0, 2, [UIntPtr]::Zero)
+    [void][GuiNative]::ShowWindow($h, 9)
+    [void][GuiNative]::MoveWindow($h, $b.X, $b.Y, $b.Width, $b.Height, $true)
+    [void][GuiNative]::ShowWindow($h, 3)
+    [void][GuiNative]::SetForegroundWindow($h)
+    "focused '$Title' on $($screen.DeviceName)"
   }
 
   'shot' {
