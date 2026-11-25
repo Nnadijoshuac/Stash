@@ -23,7 +23,7 @@ import {
   assertSurfnet,
   loadOrCreateKeypair,
   protectedAccounts,
-  refreshRoute,
+  prepareForkForSend,
   sendUsdc,
 } from "@stash/fork";
 
@@ -68,7 +68,7 @@ const payment = await getIncomingPayment(connection, owner, paidSig);
 if (!payment) throw new Error("Payment vanished between listing and stashing.");
 const allocation = allocate(payment.amountUsdc, RULE);
 const built = await buildBasket({ connection, owner, treasury, allocation });
-await refreshRoute(built.routeAccounts, protectedAccounts(owner, treasury));
+await prepareForkForSend(built.routeAccounts, protectedAccounts(owner, treasury));
 built.transaction.sign([wallet]);
 const sim = await connection.simulateTransaction(built.transaction, { sigVerify: true });
 if (sim.value.err) {

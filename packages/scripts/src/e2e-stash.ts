@@ -21,7 +21,7 @@ import {
   treasuryFeeAccount,
   type StashRule,
 } from "@stash/core";
-import { SURFNET_RPC_URL, assertSurfnet, protectedAccounts, refreshRoute } from "@stash/fork";
+import { SURFNET_RPC_URL, assertSurfnet, prepareForkForSend, protectedAccounts } from "@stash/fork";
 import { loadOrCreateKeypair } from "@stash/fork";
 
 const SPY = "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W";
@@ -66,8 +66,8 @@ const built = await buildBasket({ connection, owner, treasury, allocation });
 console.log(`\nBuilt one transaction: ${built.bytes} / 1232 bytes, ${built.accounts} / 64 accounts, ${built.instructions} instructions`);
 built.warnings.forEach((w) => console.log(`  warning: ${w}`));
 
-const refreshed = await refreshRoute(built.routeAccounts, protectedAccounts(owner, treasury));
-console.log(`Refreshed ${refreshed} route accounts from mainnet (fork only, ISSUES #7)`);
+await prepareForkForSend(built.routeAccounts, protectedAccounts(owner, treasury));
+console.log("Fork prepared: clock synced, route refreshed (fork only, ISSUES #7, #10)");
 
 built.transaction.sign([wallet]);
 
