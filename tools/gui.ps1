@@ -4,8 +4,9 @@
   type, press keys and scroll.
 
   Coordinates for click and scroll are relative to the screen being tested
-  (the extended screen by default), in real pixels, matching the screenshots
-  this script takes. The process is made DPI-aware first, because the primary
+  (the PRIMARY screen by default; pass -Extended for the other one), in real
+  pixels, matching the screenshots this script takes. The owner's extended
+  screen is often in use, so it is never touched unless asked for. The process is made DPI-aware first, because the primary
   screen is scaled to 150% and unscaled coordinates land in the wrong place.
 
   Examples:
@@ -17,7 +18,8 @@
     .\tools\gui.ps1 scroll -Delta -5
 #>
 param(
-  [Parameter(Mandatory)][ValidateSet('open','shot','click','type','key','scroll','info')][string]$Action,
+  [Parameter(Mandatory)][ValidateSet('open','focus','shot','click','type','key','scroll','info')][string]$Action,
+  [string]$Title,
   [string]$Url,
   [string]$Out,
   [int]$X,
@@ -25,7 +27,7 @@ param(
   [string]$Text,
   [string]$Keys,
   [int]$Delta,
-  [switch]$Primary
+  [switch]$Extended
 )
 
 Add-Type -AssemblyName System.Windows.Forms, System.Drawing
@@ -41,14 +43,16 @@ public static class GuiNative {
   [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int c);
   [DllImport("user32.dll")] public static extern bool MoveWindow(IntPtr h, int x, int y, int w, int hgt, bool r);
   [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
+  [DllImport("user32.dll")] public static extern void keybd_event(byte k, byte s, uint f, UIntPtr e);
 }
 '@
 [void][GuiNative]::SetProcessDpiAwarenessContext([IntPtr]-4)
 
-$screen = if ($Primary) { [System.Windows.Forms.Screen]::PrimaryScreen } else {
-  [System.Windows.Forms.Screen]::AllScreens | Where-Object { -not $_.Primary } | Select-Object -First 1
+$screen = [System.Windows.Forms.Screen]::PrimaryScreen
+if ($Extended) {
+  $screen = [System.Windows.Forms.Screen]::AllScreens | Where-Object { -not $_.Primary } | Select-Object -First 1
+  if (-not $screen) { throw 'No extended screen is connected.' }
 }
-if (-not $screen) { $screen = [System.Windows.Forms.Screen]::PrimaryScreen }
 $b = $screen.Bounds
 
 switch ($Action) {
@@ -68,6 +72,21 @@ switch ($Action) {
     [void][GuiNative]::MoveWindow($h, $b.X, $b.Y, $b.Width, $b.Height, $true)
     [void][GuiNative]::ShowWindow($h, 3)
     "opened $Url on $($screen.DeviceName)"
+  }
+
+  'focus' {
+    # Bring the browser window whose title contains -Title to the front, on the
+    # chosen screen, maximised. Safer than clicking: keys then go to the app,
+    # not to whatever happened to be in front (ISSUES #11).
+    $p = Get-Process brave, chrome -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle -like "*$Title*" } | Select-Object -First 1
+    if (-not $p) { throw "No Brave or Chrome window titled like '$Title'." }
+    $h = $p.MainWindowHandle
+    [GuiNative]::keybd_event(0x12, 0, 0, [UIntPtr]::Zero); [GuiNative]::keybd_event(0x12, 0, 2, [UIntPtr]::Zero)
+    [void][GuiNative]::ShowWindow($h, 9)
+    [void][GuiNative]::MoveWindow($h, $b.X, $b.Y, $b.Width, $b.Height, $true)
+    [void][GuiNative]::ShowWindow($h, 3)
+    [void][GuiNative]::SetForegroundWindow($h)
+    "focused '$($p.MainWindowTitle)' on $($screen.DeviceName)"
   }
 
   'shot' {
