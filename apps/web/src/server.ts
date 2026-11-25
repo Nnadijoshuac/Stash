@@ -18,7 +18,9 @@ import {
   USDC_MINT,
   allocate,
   buildBasket,
+  buildSell,
   getIncomingPayment,
+  sellAmount,
   listIncomingPayments,
   stockForMint,
   validateRule,
@@ -232,6 +234,68 @@ routes["POST /api/stash"] = async (req) => {
   } finally {
     inFlight.delete(payment.signature);
   }
+};
+
+/** Which stock and how much of it a sell request means, from the wallet's own balance. */
+async function sellRequest(body: Record<string, unknown>): Promise<{ mint: string; amount: bigint; holding: bigint }> {
+  const mint = String(body.mint ?? "");
+  stockForMint(mint);
+  const percent = Number(body.percent);
+  const holding = await balance(wallet.publicKey.toBase58(), mint);
+  return { mint, amount: sellAmount(holding, Math.round(percent * 100)), holding };
+}
+
+/** What selling would return, with a live quote. Builds but never signs or sends. */
+routes["POST /api/sell/preview"] = async (req) => {
+  const { mint, amount, holding } = await sellRequest(await readJson(req));
+  const built = await buildSell({ connection, owner: wallet.publicKey.toBase58(), treasury, mint, amount });
+  const s = stockForMint(mint);
+  return {
+    symbol: s.symbol,
+    tracks: s.tracks,
+    holdingShares: Number(holding) / 10 ** s.decimals,
+    sellShares: Number(amount) / 10 ** s.decimals,
+    expectedUsdc: built.quote.outAmount,
+    feeBps: built.quote.platformFee?.feeBps ?? 0,
+    route: built.quote.routePlan.map((r) => r.swapInfo.label ?? "?").join(" > "),
+    bytes: built.bytes,
+  };
+};
+
+/** Sells part or all of one stock back to USDC. Simulated first; retried once on fresh quotes. */
+routes["POST /api/sell"] = async (req) => {
+  const { mint, amount } = await sellRequest(await readJson(req));
+  const owner = wallet.publicKey.toBase58();
+  const usdcBefore = await balance(owner, USDC_MINT);
+  let built: Awaited<ReturnType<typeof buildSell>> | null = null;
+  let lastError = "";
+  for (let attempt = 1; attempt <= 2 && !built; attempt++) {
+    const candidate = await buildSell({ connection, owner, treasury, mint, amount });
+    await prepareForkForSend(candidate.routeAccounts, protectedAccounts(owner, treasury));
+    candidate.transaction.sign([wallet]);
+    const sim = await connection.simulateTransaction(candidate.transaction, { sigVerify: true });
+    if (sim.value.err) {
+      lastError = JSON.stringify(sim.value.err);
+      continue;
+    }
+    built = candidate;
+  }
+  if (!built) throw new Error(`The network would reject this sale, even with fresh quotes (${lastError}). Nothing was sent.`);
+  const signature = await connection.sendRawTransaction(built.transaction.serialize(), { skipPreflight: true });
+  const confirmation = await connection.confirmTransaction(signature, "confirmed");
+  if (confirmation.value.err) throw new Error(`The sale failed on chain. Signature ${signature}`);
+  const received = (await balance(owner, USDC_MINT)) - usdcBefore;
+  const record = {
+    signature,
+    at: new Date().toISOString(),
+    symbol: stockForMint(mint).symbol,
+    soldAmount: amount.toString(),
+    receivedUsdc: received.toString(),
+  };
+  const state = load();
+  state.sells.unshift(record);
+  save(state);
+  return record;
 };
 
 /** Leaves a payment in USDC. It stops being offered for stashing. */
