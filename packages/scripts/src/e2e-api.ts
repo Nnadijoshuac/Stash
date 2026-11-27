@@ -1,16 +1,12 @@
 /**
- * The non-custodial flow through the app's HTTP API, acting as a browser.
+ * Runs the whole flow through the app's API, acting as the browser.
+ * Start the app first (pnpm --filter @stash/web dev), then run `pnpm api`.
  *
- *   pnpm --filter @stash/web dev   (in another terminal)
- *   pnpm api
- *
- * A brand-new wallet exists only here, on the "client". The server never sees
- * its secret key. The script funds it (fork only), sets a rule, gets paid,
- * builds a stash, signs it locally, submits it, then sells part of a stock
- * the same way. It also tries to cheat, and expects to be refused:
- *   - submitting a different transaction than the one built,
- *   - submitting the same build twice,
- *   - stashing an already-stashed payment.
+ * A new wallet is made here and its key never reaches the server. It gets
+ * funded, sets a rule, gets paid, stashes, then sells, signing each step
+ * locally. It also tries three cheats and expects each one refused: a different
+ * transaction under the same build, the same build twice, and stashing a
+ * payment that was already stashed.
  */
 import { Keypair, SystemProgram, TransactionMessage, VersionedTransaction } from "@solana/web3.js";
 
@@ -55,12 +51,12 @@ const payment = payments.find((p: any) => p.signature === paid.signature);
 if (!payment) throw new Error("The payment was not detected.");
 console.log(`Detected on chain: $${Number(payment.amountUsdc) / 1e6}`);
 
-// Stash: build -> sign here -> submit. Rebuild once if prices moved.
+// Stash: build, sign here, submit. Rebuild once if prices moved.
 let stash: any;
 for (let attempt = 1; attempt <= 2 && !stash; attempt++) {
   const build = await ok("/api/stash/build", { owner, paymentSignature: payment.signature });
   if (attempt === 1) {
-    // Cheat 1: sign a completely different transaction and submit it under this build.
+    // Cheat 1: sign a different transaction and submit it under this build.
     const fake = new VersionedTransaction(
       new TransactionMessage({
         payerKey: wallet.publicKey,
@@ -88,7 +84,7 @@ console.log(`Stashed $${Number(stash.stashUsdc) / 1e6} of $500 (spent $${Number(
 // Cheat 3: stash the same payment again.
 await refused("stashing an already-stashed payment", "/api/stash/build", { owner, paymentSignature: payment.signature }, /already stashed/);
 
-// Sell 50% of the Nvidia just bought, the same way.
+// Sell half the Nvidia we just bought.
 let sale: any;
 for (let attempt = 1; attempt <= 2 && !sale; attempt++) {
   const build = await ok("/api/sell/build", { owner, mint: NVDA, percent: 50 });

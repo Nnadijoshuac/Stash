@@ -7,7 +7,7 @@ const TSLA = "XsDoVfqeBukxuZHWhdvWHBhgEHjGNst4MLodqsJHzoB";
 const AAPL = "XsbEhLAtcf6HdfpFZ5xEMdqW8nfAvcsP5bdudRLJzJp";
 const usd = (n: number) => BigInt(Math.round(n * 1_000_000));
 
-// The example carried through the README: 20% of every payment, 60% S&P 500, 40% Nvidia.
+// The README's example: 20% of every payment, 60% S&P 500, 40% Nvidia.
 const RULE: StashRule = {
   stashBps: 2_000,
   basket: [

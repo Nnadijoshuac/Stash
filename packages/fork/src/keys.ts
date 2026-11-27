@@ -1,9 +1,6 @@
 /**
- * Local test keypairs for the fork.
- *
- * They live in <repo>/keys/, which .gitignore excludes, and are created on
- * first use. They only ever hold fake money on a local surfnet, but they are
- * still never committed: a habit, not an exception.
+ * Test keypairs for the fork. Created on first use in keys/, which is
+ * gitignored. They only ever hold test money, but they still don't get committed.
  */
 import { Keypair } from "@solana/web3.js";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";

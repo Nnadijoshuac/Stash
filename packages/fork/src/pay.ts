@@ -1,10 +1,7 @@
 /**
- * A real USDC payment on the fork, from a test "payer" to the user.
- *
- * Writing a balance with a cheatcode is not a transaction, so nothing reading
- * the chain would ever see it as money arriving. A payer that actually sends
- * a token transfer makes the fork behave like a client, an employer or a
- * hackathon paying the user, which is what payment detection has to find.
+ * A real USDC transfer on the fork, from a test payer to the user. Setting a
+ * balance with a cheatcode isn't a transaction, so payment detection would
+ * never see it.
  */
 import {
   Connection,
@@ -21,7 +18,7 @@ import {
 } from "@solana/spl-token";
 import { USDC_DECIMALS, USDC_MINT } from "@stash/core";
 
-/** Sends `amount` USDC base units from `payer` to `to`. Returns the signature. */
+/** Sends `amount` USDC base units from `payer` to `to` and returns the signature. */
 export async function sendUsdc(connection: Connection, payer: Keypair, to: string, amount: bigint): Promise<string> {
   const mint = new PublicKey(USDC_MINT);
   const recipient = new PublicKey(to);

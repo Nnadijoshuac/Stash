@@ -1,10 +1,9 @@
 #!/bin/bash
-# Builds the static landing page for hosting (Vercel) into site/.
-# The app itself needs a local mainnet fork, so on the hosted site "/app"
-# redirects to the README's run-locally steps instead of a page that cannot work.
+# Copies the landing page into site/ for Vercel. The app needs the local fork,
+# so on the live site /app sends people to the README's setup steps.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-# Keep site/.vercel: it links this folder to the Vercel project "stash".
+# Keep site/.vercel, which links this folder to the Vercel project.
 find site -mindepth 1 -maxdepth 1 ! -name .vercel -exec rm -rf {} + 2>/dev/null || true
 mkdir -p site/brand
 cp apps/web/public/landing.html site/index.html

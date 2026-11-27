@@ -1,17 +1,13 @@
 /**
- * Stash's barebones app server. Plain Node, no framework.
+ * The app server. Plain Node, no framework. Run `pnpm web` and open
+ * http://localhost:4321.
  *
- *   pnpm web        then open http://localhost:4321
+ * It never holds the user's key. It reads balances and payments from the
+ * chain, builds unsigned transactions, and only sends one the wallet signed
+ * after checking it's exactly what it built.
  *
- * NON-CUSTODIAL. The server never holds the user's key. It reads a wallet's
- * balances and payments from chain, builds unsigned transactions, and only
- * sends a transaction the wallet has signed, after checking it is exactly the
- * one it built (verifySignedTransaction). Rewritten 25 Nov from a version that
- * signed with a server-held test key (agent LOG, "PLAN: the user's wallet
- * signs").
- *
- * Fork mode only: the server refuses to start unless the RPC is a local
- * surfnet. /api/dev/fund and /api/receive hand out fake money there.
+ * It only runs against a local fork, where /api/dev/fund and /api/receive hand
+ * out test money.
  */
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { randomUUID } from "node:crypto";
@@ -55,7 +51,7 @@ import { load, ownerKey, save } from "./store";
 
 const PORT = Number(process.env.PORT ?? 4321);
 const PUBLIC = resolve(dirname(fileURLToPath(import.meta.url)), "../public");
-/** web3.js's browser build, served so the page can sign without a bundler. */
+/** web3.js's browser build, so the page can sign without a bundler. */
 const WEB3_IIFE = join(
   dirname(createRequire(import.meta.url).resolve("@solana/web3.js/package.json")),
   "lib/index.iife.min.js",
@@ -63,9 +59,9 @@ const WEB3_IIFE = join(
 
 await assertSurfnet();
 const connection = new Connection(SURFNET_RPC_URL, "confirmed");
-/** Only the treasury's public key is needed: it receives fees, it never signs. */
+/** We only need the treasury's address. It receives fees and never signs. */
 const treasury = loadOrCreateKeypair("treasury").publicKey.toBase58();
-/** Fork-only test payer that sends users real (fake-money) USDC transfers. */
+/** Test payer that sends users USDC on the fork. */
 const payer = loadOrCreateKeypair("payer");
 
 async function balance(owner: string, mint: string): Promise<bigint> {
@@ -79,7 +75,7 @@ async function readJson(req: IncomingMessage): Promise<Record<string, unknown>> 
   return body ? (JSON.parse(body) as Record<string, unknown>) : {};
 }
 
-/** Errors the client can fix by building and signing again (quotes moved, build expired). */
+/** Errors fixed by building and signing again: quotes moved, or the build expired. */
 class RetryableError extends Error {}
 
 function send(res: ServerResponse, status: number, data: unknown): void {
@@ -96,7 +92,7 @@ function usdcField(body: Record<string, unknown>, field: string): bigint {
   return BigInt(raw);
 }
 
-/** The owner's rule, read from Stash's program on chain (not from our store). */
+/** The owner's rule, read from our program on chain. */
 async function requireRule(owner: string): Promise<StashRule> {
   const rule = await fetchOnChainRule(connection, new PublicKey(owner));
   if (!rule) throw new Error("Set your rule first: how much to stash, and into which stocks.");
@@ -104,15 +100,15 @@ async function requireRule(owner: string): Promise<StashRule> {
 }
 
 /**
- * The payment a request refers to. Only its signature comes from the client;
- * the amount is re-read from the chain. Refuses one already stashed or skipped.
+ * The payment a request points to. Only its signature comes from the browser;
+ * the amount is read from the chain. Refuses one already stashed or skipped.
  */
 async function requirePayment(owner: string, body: Record<string, unknown>): Promise<IncomingPayment> {
   const signature = String(body.paymentSignature ?? "");
   if (!/^[1-9A-HJ-NP-Za-km-z]{64,90}$/.test(signature)) throw new Error("Choose a payment to stash.");
   const decided = load(owner).payments[signature];
   if (decided) throw new Error(`That payment was already ${decided.status}.`);
-  // The chain is the authority: a receipt means it was stashed, whatever our store says.
+  // A receipt on chain means it was stashed, whatever our store says.
   if (await isStashedOnChain(connection, new PublicKey(owner), signature)) {
     throw new Error("That payment was already stashed.");
   }
@@ -129,7 +125,7 @@ routes["GET /api/state"] = async (_req, q) => {
     balance(owner, USDC_MINT),
     connection.getBalance(new PublicKey(owner)),
     Promise.all(STOCKS.map((s) => balance(owner, s.mint))),
-    // Prices are display-only; the page still works without them.
+    // Prices are only for display. The page works without them.
     getPrices(STOCKS.map((s) => s.mint)).catch(() => ({}) as Awaited<ReturnType<typeof getPrices>>),
   ]);
   const holdings = STOCKS.map((s, i) => {
@@ -162,7 +158,7 @@ routes["GET /api/payments"] = async (_req, q) => {
 
 /* ---------------------------------------------------------- preferences */
 
-/** xStocks are not available to US persons, Canada, the UK or Australia. */
+/** xStocks aren't available to US persons, or in Canada, the UK or Australia. */
 routes["POST /api/eligibility"] = async (req) => {
   const body = await readJson(req);
   const owner = ownerKey(body.owner);
@@ -241,8 +237,8 @@ routes["POST /api/sell/preview"] = async (req) => {
 /* ------------------------------------------------ build, sign, submit */
 
 /**
- * Transactions handed to a browser to sign, waiting to come back. Kept for
- * 90 seconds, a little less than a blockhash lives. Each build is used once.
+ * Transactions waiting for the browser to sign. Kept 90 seconds, a bit less
+ * than a blockhash lasts, and used once.
  */
 interface PendingBuild {
   owner: string;
@@ -258,7 +254,7 @@ interface PendingBuild {
 }
 const BUILD_TTL_MS = 90_000;
 const pending = new Map<string, PendingBuild>();
-/** Payments with a stash being submitted. A second submit for the same payment is refused. */
+/** Payments being stashed right now, so a second submit is refused. */
 const inFlight = new Set<string>();
 
 function remember(build: Omit<PendingBuild, "expires">): string {
@@ -271,7 +267,7 @@ function remember(build: Omit<PendingBuild, "expires">): string {
 
 const unsigned = (tx: { serialize(): Uint8Array }) => Buffer.from(tx.serialize()).toString("base64");
 
-/** An unsigned stash transaction for one payment, for the wallet to sign. */
+/** An unsigned stash for one payment. */
 routes["POST /api/stash/build"] = async (req) => {
   const body = await readJson(req);
   const owner = ownerKey(body.owner);
@@ -280,7 +276,7 @@ routes["POST /api/stash/build"] = async (req) => {
   if (inFlight.has(payment.signature)) throw new Error("This payment is already being stashed.");
   const allocation = allocate(payment.amountUsdc, await requireRule(owner));
   if ((await balance(owner, USDC_MINT)) < allocation.stashUsdc) throw new Error("Not enough USDC in the wallet for this stash.");
-  // The swaps and the on-chain receipt for this payment, in one transaction.
+  // Swaps and the receipt, in one transaction.
   const built = await buildBasket({ connection, owner, treasury, allocation, paymentSignature: payment.signature });
   const buildId = remember({
     owner,
@@ -294,12 +290,12 @@ routes["POST /api/stash/build"] = async (req) => {
   return { buildId, transaction: unsigned(built.transaction), stashUsdc: allocation.stashUsdc, bytes: built.bytes };
 };
 
-/** An unsigned transaction that saves the owner's rule on chain. */
+/** An unsigned transaction that saves the rule on chain. */
 routes["POST /api/rule/build"] = async (req) => {
   const body = await readJson(req);
   const owner = ownerKey(body.owner);
   const rule = { stashBps: body.stashBps, basket: body.basket } as unknown as StashRule;
-  validateRule(rule); // the program makes the same checks; this gives friendlier words first
+  validateRule(rule); // the program checks this too; this gives a friendlier error first
   const clean: StashRule = {
     stashBps: rule.stashBps,
     basket: rule.basket.map((b) => ({ mint: b.mint, weightBps: b.weightBps })),
@@ -315,7 +311,7 @@ routes["POST /api/rule/build"] = async (req) => {
   return { buildId, transaction: unsigned(tx) };
 };
 
-/** An unsigned sale for the wallet to sign. */
+/** An unsigned sale. */
 routes["POST /api/sell/build"] = async (req) => {
   const body = await readJson(req);
   const owner = ownerKey(body.owner);
@@ -334,10 +330,9 @@ routes["POST /api/sell/build"] = async (req) => {
 };
 
 /**
- * Sends a transaction the wallet signed, after checking it is exactly the one
- * built under `buildId` and signed by its owner. Simulated before sending;
- * if the network would reject it (quotes moved), nothing is sent and the
- * client is told to build and sign again.
+ * Sends a signed transaction if it's exactly the one built under `buildId` and
+ * the owner signed it. Simulates first; if it would fail (prices moved),
+ * nothing is sent and the browser builds and signs again.
  */
 routes["POST /api/submit"] = async (req) => {
   const body = await readJson(req);
@@ -348,7 +343,7 @@ routes["POST /api/submit"] = async (req) => {
     throw new RetryableError("That transaction expired before it was signed. Build it again.");
   }
   const { transaction } = verifySignedTransaction(build.message, String(body.signedTransaction ?? ""), build.owner);
-  pending.delete(buildId); // used once, whatever happens next
+  pending.delete(buildId); // each build is used once
 
   const owner = build.owner;
   if (build.kind === "stash") {
@@ -359,7 +354,7 @@ routes["POST /api/submit"] = async (req) => {
   }
   try {
     const usdcBefore = await balance(owner, USDC_MINT);
-    // Fork mode: real-time clock and fresh pools before simulating (ISSUES #7, #10).
+    // On the fork: fix the clock and refresh the pools before simulating.
     await prepareForkForSend(build.routeAccounts, protectedAccounts(owner, treasury));
     const sim = await connection.simulateTransaction(transaction, { sigVerify: true });
     if (sim.value.err) {
@@ -411,14 +406,14 @@ routes["POST /api/submit"] = async (req) => {
 
 /* ------------------------------------------------------- fork-only money */
 
-/** Fork only: gives a new wallet fake SOL for network fees. */
+/** Fork only: gives a wallet test SOL for fees. */
 routes["POST /api/dev/fund"] = async (req) => {
   const owner = ownerKey((await readJson(req)).owner);
   await setLamports(owner, 1_000_000_000);
   return { ok: true, sol: 1 };
 };
 
-/** Fork only: the test payer sends this wallet a real (fake-money) USDC transfer. */
+/** Fork only: the test payer sends this wallet USDC. */
 routes["POST /api/receive"] = async (req) => {
   const body = await readJson(req);
   const owner = ownerKey(body.owner);
@@ -431,7 +426,7 @@ routes["POST /api/receive"] = async (req) => {
 /* ---------------------------------------------------------------- server */
 
 async function serveStatic(path: string, res: ServerResponse): Promise<void> {
-  // "/" is the landing page; "/app" is the app itself.
+  // "/" is the landing page and "/app" is the app.
   const pages: Record<string, string> = { "/": "/landing.html", "/app": "/app.html", "/app/": "/app.html" };
   const file = path === "/vendor/web3.js" ? WEB3_IIFE : resolve(PUBLIC, "." + (pages[path] ?? path));
   if (file !== WEB3_IIFE && !file.startsWith(PUBLIC)) return send(res, 404, { error: "Not found" });

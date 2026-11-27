@@ -1,11 +1,10 @@
 /**
- * Getting out, end to end on the fork: sell part of a stock back to USDC.
+ * Sell part of a stock back to USDC, on the fork.
  *
  *   pnpm fund && pnpm stash && pnpm sell [SYMBOL] [percent]
  *
- * Defaults to selling 50% of the wallet's NVDAx. Checks the USDC that
- * arrived, the fee in the treasury's USDC account, and that the sale is not
- * mistaken for an incoming payment (the user signed it).
+ * Sells half the wallet's NVDAx by default. Checks the USDC that arrived, the
+ * fee in the treasury, and that the sale isn't counted as a payment.
  */
 import { Connection, PublicKey } from "@solana/web3.js";
 import {

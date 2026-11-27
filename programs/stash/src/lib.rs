@@ -1,34 +1,26 @@
-//! Stash's on-chain program: the user's stash rule and a receipt for every
-//! payment that has been stashed.
+//! Stash's on-chain program.
 //!
-//! What lives here, and why on chain:
-//! - **The rule** ("stash 20% of every payment: 60% S&P 500, 40% Nvidia") is
-//!   an account owned by the user's wallet, not a row in our database. Anyone
-//!   can read it; only the owner can change it.
-//! - **The stash receipt** is created inside the same atomic transaction as
-//!   the Jupiter swaps. If any swap fails, no receipt exists; if a receipt
-//!   already exists for a payment, the whole transaction fails. So "a payment
-//!   is never stashed twice" is enforced by Solana, not by our server.
-//! - **Verified xStocks only.** A rule may name only the five xStock mints
-//!   Stash has verified. Look-alike tokens with the same names exist.
+//! It stores each wallet's stash rule, which only the owner can change, and
+//! writes a receipt for every stashed payment. The receipt is created in the
+//! same transaction as the swaps: if a swap fails there's no receipt, and if
+//! a receipt already exists the whole stash fails. So a payment can't be
+//! stashed twice, and that's enforced by Solana rather than by our server.
+//! Rules can only name the five verified xStocks.
 //!
-//! What it does not do: it does not check the payment itself. The server reads
-//! the payment from the chain and passes its amount; the program checks the
-//! stashed amount is exactly what the rule says for that amount.
+//! It doesn't check the payment itself. The server reads that from the chain;
+//! the program checks the stashed amount matches the rule.
 
 use anchor_lang::prelude::*;
 
 declare_id!("7G66DnGnvPBaAr4hWNhno1ZDeAuh2bvcFmKm5UiZu7oJ");
 
-/// A basket holds at most two stocks. Measured 27 Nov 2026: two Jupiter swaps
-/// plus this program's receipt take 1,002 of a transaction's 1,232 bytes;
-/// three swaps plus the receipt never fit.
+/// At most two stocks. Two swaps plus the receipt come to 1,002 of 1,232
+/// bytes; three swaps plus the receipt don't fit.
 pub const MAX_BASKET_LEGS: usize = 2;
 /// 100% in basis points.
 pub const FULL_BPS: u16 = 10_000;
 
-/// The xStocks (Token-2022) mints Stash accepts. Same list as
-/// `packages/core/src/allowlist.ts`.
+/// The xStock mints we accept. Same list as packages/core/src/allowlist.ts.
 pub const VERIFIED_XSTOCKS: [Pubkey; 5] = [
     pubkey!("XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W"), // SPYx, S&P 500
     pubkey!("Xs8S1uUs1zvS2p7iwtsG3b6fkhpvmwz4GYU3gWAmWHZ"), // QQQx, Nasdaq 100
@@ -53,12 +45,9 @@ pub mod stash {
         Ok(())
     }
 
-    /// Records that one payment was stashed. Put in the same transaction as
-    /// the swaps, so the receipt exists exactly when the stash happened.
-    ///
-    /// `payment_id` is the first 32 bytes of the incoming payment's
-    /// transaction signature. It seeds the receipt address, so a second
-    /// stash of the same payment cannot create its receipt and fails.
+    /// Records that one payment was stashed. Goes in the same transaction as the
+    /// swaps. `payment_id` is the first 32 bytes of the payment's signature and
+    /// seeds the receipt's address, so stashing the same payment again fails.
     pub fn record_stash(
         ctx: Context<RecordStash>,
         payment_id: [u8; 32],
@@ -87,8 +76,7 @@ pub mod stash {
     }
 }
 
-/// The rule's share of a payment, rounded down. Matches `allocate()` in
-/// `packages/core/src/allocation.ts` to the base unit.
+/// The rule's share of a payment, rounded down, same as allocate() in the app.
 pub fn rule_amount(payment_usdc: u64, stash_bps: u16) -> u64 {
     ((payment_usdc as u128 * stash_bps as u128) / FULL_BPS as u128) as u64
 }

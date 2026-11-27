@@ -1,8 +1,4 @@
-/**
- * @stash/core holds every decision that touches money: which mints may be
- * bought, how a payment is split into legs, how each leg is quoted, and how
- * the legs are packed into one transaction. The UI only ever calls into here.
- */
+/** Everything that touches money lives here. The app only calls into this package. */
 export * from "./constants";
 export * from "./allowlist";
 export * from "./allocation";

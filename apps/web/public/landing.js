@@ -1,5 +1,4 @@
-// The nav is transparent, so its text colour follows what is under it:
-// light text over the navy hero, dark text over the milk sections and the fade.
+// The nav is see-through, so its text goes light over the navy hero and dark everywhere else.
 (() => {
   const nav = document.querySelector(".nav");
   const dark = [...document.querySelectorAll('[data-nav="dark"]')];

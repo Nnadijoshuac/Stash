@@ -1,11 +1,6 @@
 /**
- * Turns a payment and the user's rule into the exact USDC amount each stock
- * receives. This is the only file that decides how much money goes where, so
- * it is pure, uses integer base units throughout (never floats), and is
- * covered by tests.
- *
- * The invariant that matters: the legs always add up to exactly the amount
- * the rule says to stash. Not a base unit more, not a base unit less.
+ * Splits a payment into how much USDC each stock gets. Integer base units
+ * only, no floats. The legs always add up to exactly what the rule stashes.
  */
 import { FULL_WEIGHT_BPS, MAX_BASKET_LEGS, MIN_LEG_USDC, USDC_DECIMALS } from "./constants";
 import { stockForMint } from "./allowlist";
@@ -35,7 +30,7 @@ export interface Allocation {
   legs: Leg[];
 }
 
-/** Throws with a sentence a user could act on if the rule cannot be used. */
+/** Throws a message the user can act on if the rule isn't usable. */
 export function validateRule(rule: StashRule): void {
   const { stashBps, basket } = rule;
   if (!Number.isInteger(stashBps) || stashBps <= 0 || stashBps > FULL_WEIGHT_BPS) {
@@ -50,7 +45,7 @@ export function validateRule(rule: StashRule): void {
   const seen = new Set<string>();
   let total = 0;
   for (const { mint, weightBps } of basket) {
-    stockForMint(mint); // throws for anything off the allowlist
+    stockForMint(mint); // throws if it's not on the allowlist
     if (seen.has(mint)) throw new Error("Each stock can appear in the basket only once.");
     seen.add(mint);
     if (!Number.isInteger(weightBps) || weightBps <= 0) {
@@ -64,11 +59,8 @@ export function validateRule(rule: StashRule): void {
 }
 
 /**
- * Splits a payment according to the rule.
- *
- * Each leg gets the floor of its share. The few base units left over by
- * rounding go to the heaviest leg (the first one on a tie), so the result is
- * deterministic and the total is exact.
+ * Each leg gets the floor of its share. Whatever rounding leaves over goes to
+ * the biggest leg (the first on a tie), so the total is exact.
  */
 export function allocate(paymentUsdc: bigint, rule: StashRule): Allocation {
   validateRule(rule);

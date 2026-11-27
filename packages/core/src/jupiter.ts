@@ -1,10 +1,7 @@
 /**
- * The thin layer between Stash and Jupiter's swap API.
- *
- * Quotes are always fetched here, on the server side of the app, never taken
- * from the client: the client does not get to name a price. Every call also
- * re-checks the output mint against the allowlist, so a bug elsewhere cannot
- * route money into a look-alike token.
+ * Jupiter's swap API. Quotes are always fetched server side, so the browser
+ * never gets to name a price, and every call checks the stock is on the
+ * allowlist.
  */
 import { PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { stockForMint } from "./allowlist";
@@ -15,11 +12,11 @@ import {
   USDC_MINT,
 } from "./constants";
 
-/** Keyless public endpoint. Set JUPITER_API_URL to use a paid endpoint instead. */
+/** Free public endpoint. Set JUPITER_API_URL for a paid one. */
 export const JUPITER_API_URL =
   (typeof process !== "undefined" && process.env.JUPITER_API_URL) || "https://lite-api.jup.ag/swap/v1";
 
-/** The parts of Jupiter's quote that Stash reads. The full object is kept to send back. */
+/** The quote fields we read. We keep the whole object to send back. */
 export interface JupiterQuote {
   inputMint: string;
   outputMint: string;
@@ -94,11 +91,7 @@ export interface SellQuoteParams {
   maxAccounts?: number;
 }
 
-/**
- * Quotes selling an allowlisted stock back to USDC. On an ExactIn swap the
- * platform fee is taken in the output mint, so here it is paid in USDC and
- * the fee account is the treasury's USDC account.
- */
+/** Quotes selling a stock back to USDC. The fee comes out in USDC, into the treasury's USDC account. */
 export async function quoteSell(params: SellQuoteParams): Promise<JupiterQuote> {
   stockForMint(params.inputMint);
   if (params.amount <= 0n) throw new Error("Choose an amount of the stock to sell.");
@@ -119,20 +112,16 @@ export async function quoteSell(params: SellQuoteParams): Promise<JupiterQuote> 
 }
 
 /**
- * Turns a quote into instructions for `owner`.
- *
- * `feeAccount` is the treasury's token account for the output stock. Jupiter
- * refuses a platform fee without one ("feeAccount is required for swap with
- * platformFee", ISSUES #2), and on an ExactIn swap the fee is paid in the
- * output mint, so each stock needs its own.
+ * Turns a quote into instructions for `owner`. Jupiter won't take a platform
+ * fee without `feeAccount`, and the fee is paid in the output token, so each
+ * stock needs its own treasury account.
  */
 export async function swapInstructions(
   quote: JupiterQuote,
   owner: string,
   feeAccount: string,
 ): Promise<JupiterSwapInstructions> {
-  // One side of every swap Stash builds must be an allowlisted stock and the
-  // other must be USDC: buying (USDC -> stock) or selling (stock -> USDC).
+  // Every swap is USDC to a listed stock or back.
   const stockSide = quote.inputMint === USDC_MINT ? quote.outputMint : quote.inputMint;
   const otherSide = quote.inputMint === USDC_MINT ? quote.inputMint : quote.outputMint;
   stockForMint(stockSide);

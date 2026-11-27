@@ -1,11 +1,7 @@
 /**
- * Associated token account addresses, derived without pulling in the whole
- * SPL token library at runtime.
- *
- * Stash needs one per (treasury, stock): Jupiter pays the platform fee in the
- * output mint, into the account named as `feeAccount` (ISSUES #2). xStocks are
- * Token-2022 mints, and the token program is part of the derivation, so using
- * the classic token program here would produce an address that never exists.
+ * Associated token account addresses, without loading the SPL token library.
+ * xStocks are Token-2022, and the token program is part of the address, so
+ * using the classic program gives an account that never exists.
  */
 import { PublicKey } from "@solana/web3.js";
 import { TOKEN_2022_PROGRAM_ID } from "./constants";

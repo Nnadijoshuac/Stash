@@ -1,22 +1,14 @@
 /**
- * Finding the payments a user receives, so each one can be stashed.
- *
- * "Every payment you receive" is the promise, so a payment has to be read off
- * the chain, not typed in. A transaction counts as an incoming payment when:
- *   - it succeeded,
- *   - the user's USDC balance went up in it, and
- *   - the user did not sign it. Anything the user signed (a stash, a swap
- *     back to USDC, a transfer between their own accounts) is their own
- *     action, not money arriving.
- *
- * The amount always comes from the chain. A stash is later tied to the
- * payment's signature, so the client never gets to name how much it was.
+ * Finds the payments a wallet received. A transaction counts if it succeeded,
+ * the wallet's USDC went up, and the wallet didn't sign it (anything it signed
+ * is its own stash, sale or transfer). The amount always comes from the chain,
+ * never from the browser.
  */
 import { Connection, PublicKey } from "@solana/web3.js";
 import { associatedTokenAddress, TOKEN_PROGRAM_ID } from "./ata";
 import { USDC_MINT } from "./constants";
 
-/** The parts of a parsed transaction this module reads. */
+/** The parts of a parsed transaction we read. */
 export interface TokenBalanceLike {
   mint: string;
   owner?: string;
@@ -36,7 +28,7 @@ export interface IncomingPayment {
   signature: string;
   /** USDC base units received. */
   amountUsdc: bigint;
-  /** The wallet whose USDC went down in the same transaction, if exactly one did. */
+  /** Who paid, if exactly one wallet's USDC went down. */
   from: string | null;
   slot: number;
   blockTime: number | null;
@@ -50,7 +42,7 @@ function sumUsdc(balances: TokenBalanceLike[] | null | undefined, owner: string)
 
 const keyString = (k: { toBase58(): string } | string) => (typeof k === "string" ? k : k.toBase58());
 
-/** Pure. Returns the payment `owner` received in `tx`, or null if it was not one. */
+/** The payment `owner` received in `tx`, or null. No network calls. */
 export function incomingUsdc(tx: ParsedTxLike, owner: string): IncomingPayment | null {
   if (!tx.meta || tx.meta.err) return null;
   const signers = tx.transaction.message.accountKeys.filter((k) => k.signer).map((k) => keyString(k.pubkey));
@@ -77,12 +69,9 @@ export function incomingUsdc(tx: ParsedTxLike, owner: string): IncomingPayment |
 }
 
 /**
- * Reads the most recent transactions touching the user's USDC account and
- * returns the incoming payments among them, newest first.
- *
- * Only the associated USDC account is watched. That is where wallets and
- * exchanges send USDC; money sent to some other token account the user
- * happens to own would not be seen, and the README says so.
+ * Recent payments into the wallet's USDC account, newest first. Only the
+ * associated USDC account is watched; USDC sent to another account it owns
+ * won't show up.
  */
 export async function listIncomingPayments(
   connection: Connection,
@@ -92,10 +81,9 @@ export async function listIncomingPayments(
   const usdcAccount = associatedTokenAddress(owner, USDC_MINT, TOKEN_PROGRAM_ID);
   const sigs = await connection.getSignaturesForAddress(new PublicKey(usdcAccount), { limit: options.limit ?? 25 });
   if (sigs.length === 0) return [];
-  // One request per transaction, not getParsedTransactions: that sends a
-  // JSON-RPC batch, which surfpool (and some RPC providers) do not accept, and
-  // web3.js then crashes with "unsafeRes.map is not a function" (ISSUES #9).
-  // Failed transactions are skipped up front; they can never be payments.
+  // One request per transaction. getParsedTransactions sends a JSON-RPC batch,
+  // which surfpool doesn't support. Failed transactions can't be payments, so
+  // skip them first.
   const txs = await Promise.all(
     sigs
       .filter((s) => !s.err)
@@ -109,14 +97,12 @@ export async function listIncomingPayments(
   return Promise.all(payments.map((p) => withPlausibleTime(connection, p)));
 }
 
-/** 2001-09-09. No Solana transaction is older, so anything earlier is a misreported time. */
+/** 2001-09-09. Anything earlier than this is a bad timestamp. */
 const EARLIEST_PLAUSIBLE_BLOCK_TIME = 1_000_000_000;
 
 /**
- * Surfpool's getTransaction reports blockTime divided by 1,000 (1795630
- * instead of 1795630902), so payments on the fork showed as January 1970
- * (ISSUES #12). getBlockTime(slot) answers correctly there, so an impossible
- * time is replaced from it. On mainnet this never triggers.
+ * Surfpool's getTransaction returns blockTime divided by 1,000, which puts
+ * fork payments in 1970. If the time is impossible, ask getBlockTime(slot).
  */
 async function withPlausibleTime(connection: Connection, p: IncomingPayment): Promise<IncomingPayment> {
   if (p.blockTime !== null && p.blockTime >= EARLIEST_PLAUSIBLE_BLOCK_TIME) return p;
@@ -124,7 +110,7 @@ async function withPlausibleTime(connection: Connection, p: IncomingPayment): Pr
   return { ...p, blockTime: blockTime !== null && blockTime >= EARLIEST_PLAUSIBLE_BLOCK_TIME ? blockTime : null };
 }
 
-/** Looks up one payment by signature, re-reading it from the chain. */
+/** One payment by signature, read from the chain again. */
 export async function getIncomingPayment(
   connection: Connection,
   owner: string,

@@ -1,14 +1,11 @@
 /**
- * A real, signed stash, end to end, on a local mainnet fork. No real money.
+ * A real signed stash on the fork. No real money.
  *
- *   pnpm fund && pnpm stash [3]
+ *   pnpm fund && pnpm stash
  *
- * Allocates a $500 payment by the README's rule, builds the basket through
- * the real core logic (allowlist, allocation, Jupiter quotes with Stash's fee,
- * one packed transaction), simulates it to measure compute units, sends it,
- * and reads balances before and after. Prints the signature as evidence.
- *
- * Pass "3" to stash into three stocks instead of two.
+ * Splits a $500 payment by the rule, builds the basket with real Jupiter
+ * quotes, simulates it for compute units, sends it, and prints balances before
+ * and after along with the signature.
  */
 import { Connection, PublicKey } from "@solana/web3.js";
 import {
@@ -26,12 +23,7 @@ import { loadOrCreateKeypair } from "@stash/fork";
 
 const SPY = "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W";
 const NVDA = "Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh";
-const TSLA = "XsDoVfqeBukxuZHWhdvWHBhgEHjGNst4MLodqsJHzoB";
-
-const threeLegs = process.argv[2] === "3";
-const rule: StashRule = threeLegs
-  ? { stashBps: 2_000, basket: [{ mint: SPY, weightBps: 5_000 }, { mint: NVDA, weightBps: 3_000 }, { mint: TSLA, weightBps: 2_000 }] }
-  : { stashBps: 2_000, basket: [{ mint: SPY, weightBps: 6_000 }, { mint: NVDA, weightBps: 4_000 }] };
+const rule: StashRule = { stashBps: 2_000, basket: [{ mint: SPY, weightBps: 6_000 }, { mint: NVDA, weightBps: 4_000 }] };
 const PAYMENT = 500_000_000n; // a $500 USDC payment
 
 await assertSurfnet();
@@ -67,7 +59,7 @@ console.log(`\nBuilt one transaction: ${built.bytes} / 1232 bytes, ${built.accou
 built.warnings.forEach((w) => console.log(`  warning: ${w}`));
 
 await prepareForkForSend(built.routeAccounts, protectedAccounts(owner, treasury));
-console.log("Fork prepared: clock synced, route refreshed (fork only, ISSUES #7, #10)");
+console.log("Fork ready: clock synced, pools refreshed");
 
 built.transaction.sign([wallet]);
 

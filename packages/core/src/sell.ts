@@ -1,9 +1,6 @@
 /**
- * Getting out: selling part or all of a stock position back to USDC.
- *
- * One stock per transaction, in its own Jupiter route. Stash's fee is taken
- * in USDC (the output), into the treasury's USDC account. The transaction is
- * measured against the same limits as a basket.
+ * Selling a stock back to USDC: one stock, one Jupiter route, one transaction.
+ * Stash's fee comes out in USDC.
  */
 import { Connection, PublicKey, TransactionInstruction, AddressLookupTableAccount } from "@solana/web3.js";
 import { stockForMint } from "./allowlist";
@@ -12,15 +9,12 @@ import { FULL_WEIGHT_BPS, USDC_MINT } from "./constants";
 import { packBasket, type Packed } from "./basket";
 import { quoteSell, swapInstructions, toInstruction, type JupiterQuote } from "./jupiter";
 
-/** The treasury's USDC account, where the fee on a sale lands. */
+/** Where the fee on a sale goes. */
 export function treasuryUsdcFeeAccount(treasury: string): string {
   return associatedTokenAddress(treasury, USDC_MINT, TOKEN_PROGRAM_ID);
 }
 
-/**
- * How many base units of a holding to sell for a percentage in basis points.
- * 10,000 sells everything, exactly, with no dust left behind.
- */
+/** How much of a holding to sell for a share in basis points. 10,000 sells all of it, no dust. */
 export function sellAmount(holding: bigint, bps: number): bigint {
   if (!Number.isInteger(bps) || bps <= 0 || bps > FULL_WEIGHT_BPS) {
     throw new Error("Choose how much to sell: more than 0% and at most 100%.");

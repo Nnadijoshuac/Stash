@@ -3,8 +3,7 @@ node_modules/
 .pnpm-store/
 
 # builds
-# Unanchored patterns match at any depth, and "build/" was quietly excluding
-# the app/api/tx/build route. Keep these rooted.
+# Rooted, so they don't also match source folders with the same name.
 /dist/
 packages/*/dist/
 .next/
@@ -16,7 +15,7 @@ out/
 .env.local
 .env.*.local
 
-# keys — never commit these
+# keys: never commit these
 *.keypair.json
 keys/
 
@@ -41,13 +40,13 @@ coverage/
 # surfpool
 .surfpool/
 
-# runtime state written by pnpm reset
+# per-wallet state the app writes
 .stash/
 
-# working notes, not shipped
+# hackathon notes
 HACKATHON.md
 
-# agent working notes: local only, never pushed (owner request, 25 Nov)
+# local working notes
 agent/
 
 # built static landing page (tools/build-site.sh)

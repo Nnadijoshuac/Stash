@@ -1,16 +1,11 @@
 /**
- * Client for Stash's on-chain program (`programs/stash`, Anchor).
+ * Client for our Anchor program (programs/stash). It keeps each wallet's rule
+ * at ["rule", owner] and a receipt per stashed payment at
+ * ["stash", owner, paymentId]. The receipt is written in the same transaction
+ * as the swaps, so stashing a payment twice fails on chain.
  *
- * The program holds two things on Solana:
- * - each wallet's stash rule, at PDA ["rule", owner];
- * - a receipt per stashed payment, at PDA ["stash", owner, paymentId],
- *   created inside the same atomic transaction as the Jupiter swaps. A second
- *   stash of the same payment cannot create its receipt, so the whole
- *   transaction fails on chain.
- *
- * Instructions are encoded by hand (Anchor's 8-byte discriminator, then Borsh)
- * so the app needs no extra dependency and every byte is visible: transaction
- * size is Stash's tightest budget.
+ * Instructions are encoded by hand (8-byte discriminator, then Borsh). No extra
+ * dependency, and we can see every byte, which matters when space is this tight.
  */
 import { createHash } from "node:crypto";
 import bs58 from "bs58";
@@ -18,7 +13,7 @@ import { PublicKey, SystemProgram, TransactionInstruction, type Connection } fro
 import type { StashRule } from "./allocation";
 import { FULL_WEIGHT_BPS } from "./constants";
 
-/** Deployed on devnet, and loaded into the local mainnet fork by `pnpm fund`. */
+/** Deployed on devnet. `pnpm fund` loads the same build into the fork. */
 export const STASH_PROGRAM_ID = new PublicKey("7G66DnGnvPBaAr4hWNhno1ZDeAuh2bvcFmKm5UiZu7oJ");
 
 function discriminator(namespace: "global" | "account" | "event", name: string): Buffer {
@@ -33,7 +28,7 @@ export function rulePda(owner: PublicKey): PublicKey {
   return PublicKey.findProgramAddressSync([Buffer.from("rule"), owner.toBuffer()], STASH_PROGRAM_ID)[0];
 }
 
-/** The first 32 bytes of the payment's transaction signature identify it. */
+/** A payment's id is the first 32 bytes of its signature. */
 export function paymentId(paymentSignature: string): Buffer {
   const raw = Buffer.from(bs58.decode(paymentSignature));
   if (raw.length !== 64) throw new Error("That is not a Solana transaction signature.");
@@ -82,7 +77,7 @@ export function setRuleInstruction(owner: PublicKey, rule: StashRule): Transacti
   });
 }
 
-/** Records one stashed payment. Goes in the same transaction as the swaps. */
+/** Records one stashed payment. Put it in the same transaction as the swaps. */
 export function recordStashInstruction(
   owner: PublicKey,
   paymentSignature: string,
@@ -102,7 +97,7 @@ export function recordStashInstruction(
   });
 }
 
-/** Reads the owner's rule from chain, or null if they have not set one. */
+/** The owner's rule from chain, or null if there isn't one. */
 export async function fetchOnChainRule(connection: Connection, owner: PublicKey): Promise<StashRule | null> {
   const info = await connection.getAccountInfo(rulePda(owner), "confirmed");
   if (!info || !info.owner.equals(STASH_PROGRAM_ID)) return null;
@@ -121,7 +116,7 @@ export async function fetchOnChainRule(connection: Connection, owner: PublicKey)
   return { stashBps, basket };
 }
 
-/** True once a receipt exists for this payment, i.e. it was stashed. */
+/** True once this payment has a receipt. */
 export async function isStashedOnChain(
   connection: Connection,
   owner: PublicKey,
@@ -131,7 +126,7 @@ export async function isStashedOnChain(
   return info !== null && info.owner.equals(STASH_PROGRAM_ID);
 }
 
-/** The program's check, mirrored: the rule's share of a payment, rounded down. */
+/** Same check as the program: the rule's share of a payment, rounded down. */
 export function ruleAmount(paymentUsdc: bigint, stashBps: number): bigint {
   return (paymentUsdc * BigInt(stashBps)) / BigInt(FULL_WEIGHT_BPS);
 }

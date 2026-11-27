@@ -1,12 +1,7 @@
 /**
- * Dollar prices for allowlisted stocks, so the app can show what a stash is
- * worth, not only how many tokens it holds.
- *
- * Jupiter's price API returns a USD price per token. xStocks are Token-2022
- * mints and some carry a scaled-UI multiplier (for splits and dividends), so a
- * token is not always exactly one share; valuing holdings as tokens x price
- * per token is correct either way. Prices are display-only: no money decision
- * reads them, quotes do.
+ * USD prices from Jupiter, for showing what holdings are worth. Some xStocks
+ * scale their UI amount for splits and dividends, but tokens x price per token
+ * is right either way. Display only; trades use quotes.
  */
 import { stockForMint } from "./allowlist";
 
@@ -21,7 +16,7 @@ export interface StockPrice {
 
 let cache: { at: number; prices: Record<string, StockPrice> } | null = null;
 
-/** USD prices for the given allowlisted mints, cached for 30 seconds. */
+/** USD prices for these mints, cached for 30 seconds. */
 export async function getPrices(mints: string[]): Promise<Record<string, StockPrice>> {
   mints.forEach((m) => stockForMint(m));
   if (cache && Date.now() - cache.at < CACHE_MS && mints.every((m) => m in cache!.prices)) {
@@ -39,7 +34,7 @@ export async function getPrices(mints: string[]): Promise<Record<string, StockPr
   return prices;
 }
 
-/** Dollar value of a token amount in base units, given the stock's price. Display only. */
+/** What an amount is worth in dollars. Display only. */
 export function usdValue(amount: bigint, decimals: number, price: StockPrice | undefined): number | null {
   if (!price) return null;
   return (Number(amount) / 10 ** decimals) * price.usdPrice;

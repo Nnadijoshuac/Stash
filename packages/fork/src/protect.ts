@@ -8,17 +8,15 @@ import {
 } from "@stash/core";
 
 /**
- * The accounts that hold fake balances written by cheatcodes: the wallet, the
- * treasury, the wallet's USDC and stock accounts, and the treasury's fee
- * accounts. refreshRoute() must never re-pull these from mainnet, where they
- * are empty or do not exist.
+ * Accounts holding test balances we wrote with cheatcodes. refreshRoute() must
+ * never reset these: on mainnet they're empty or don't exist.
  */
 export function protectedAccounts(owner: string, treasury: string): Set<string> {
   const keep = new Set<string>([
     owner,
     treasury,
     associatedTokenAddress(owner, USDC_MINT, TOKEN_PROGRAM_ID),
-    // Where Stash's fee on a sale lands.
+    // The treasury's USDC account, for fees on sales.
     associatedTokenAddress(treasury, USDC_MINT, TOKEN_PROGRAM_ID),
   ]);
   for (const s of STOCKS) {

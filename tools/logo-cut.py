@@ -1,7 +1,6 @@
-# Cut the Gemini splat out of its white background into transparent PNGs.
-# Alpha comes from how far each pixel is from white on the blue channel
-# (white B=255, the orange B~31), so edges stay anti-aliased; colour is set
-# to one exact brand orange so the mark is perfectly flat.
+# Cuts the Gemini splat out of its white background. Alpha comes from the blue
+# channel (white is 255, the orange about 31) so edges stay smooth, and every
+# pixel is set to the same orange so the mark is flat.
 import sys
 from PIL import Image
 src, out_dir = sys.argv[1], sys.argv[2]

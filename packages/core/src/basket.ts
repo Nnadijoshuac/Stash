@@ -1,11 +1,7 @@
 /**
- * Packs every leg of a stash into ONE versioned transaction.
- *
- * That is the promise Stash makes: the whole basket lands, or nothing moves.
- * It only holds if the legs fit Solana's limits (1,232 bytes, 64 accounts),
- * and Jupiter's routes change from one quote to the next, so every build is
- * measured. A basket that would not fit is refused here, with the numbers,
- * rather than discovered by the network.
+ * Packs a whole stash into one transaction, so every stock lands or none do.
+ * Routes change between quotes, so each build is measured and refused here if
+ * it won't fit (1,232 bytes, 64 accounts).
  */
 import {
   AddressLookupTableAccount,
@@ -27,13 +23,8 @@ import { quoteLeg, swapInstructions, toInstruction, type JupiterQuote } from "./
 import { recordStashInstruction } from "./program";
 
 /**
- * The compute budget requested for a basket.
- *
- * Measured on a mainnet fork on 25 Nov 2026 (ISSUES #4): two legs used
- * 197,063 units, three legs 252,633. Routes vary per quote, so this keeps
- * roughly 2x headroom over the three-leg figure instead of asking for the
- * 1.4M maximum, which would make every stash pay priority fees on compute
- * it never uses.
+ * Compute budget for a basket. Two stocks used about 197k units and three
+ * about 253k, so 500k leaves room without paying priority fees on the 1.4M max.
  */
 export const BASKET_COMPUTE_UNIT_LIMIT = 500_000;
 export const BASKET_COMPUTE_UNIT_PRICE_MICROLAMPORTS = 1_000;
@@ -46,7 +37,7 @@ export interface PackInput {
   swaps: TransactionInstruction[];
   lookupTables: AddressLookupTableAccount[];
   recentBlockhash: string;
-  /** Placed after the swaps, e.g. the on-chain stash receipt. */
+  /** Goes after the swaps. Used for the on-chain receipt. */
   after?: TransactionInstruction[];
   computeUnitLimit?: number;
   computeUnitPriceMicroLamports?: number;
@@ -68,10 +59,7 @@ function fingerprint(ix: TransactionInstruction): string {
   ].join("|");
 }
 
-/**
- * Pure: no network. Builds the unsigned transaction and measures it.
- * Throws if it breaks a hard limit.
- */
+/** Builds the unsigned transaction and measures it. No network calls. Throws if it's too big. */
 export function packBasket(input: PackInput): Packed {
   const seen = new Set<string>();
   const setup: TransactionInstruction[] = [];
@@ -112,10 +100,9 @@ export function packBasket(input: PackInput): Packed {
   }
 
   const transaction = new VersionedTransaction(message);
-  // web3.js serializes into a fixed 1,232-byte buffer and throws a bare
-  // "encoding overruns Uint8Array" once a message is past it (ISSUES #5).
-  // Catch that and say what it means. Otherwise measure the message and add
-  // one 64-byte signature slot per required signer plus the length prefix.
+  // web3.js throws "encoding overruns Uint8Array" once a message passes 1,232
+  // bytes, so turn that into a useful error. Size = message + 64 bytes per
+  // signer + 1 length byte.
   let messageBytes: number;
   try {
     messageBytes = message.serialize().length;
@@ -148,9 +135,8 @@ export interface BuildBasketInput {
   allocation: Allocation;
   platformFeeBps?: number;
   /**
-   * The payment being stashed. When given, the transaction also records an
-   * on-chain receipt for it (`programs/stash`), so the swaps and the receipt
-   * land together or not at all, and the same payment cannot be stashed twice.
+   * The payment being stashed. If set, the transaction also writes its
+   * on-chain receipt, so the same payment can't be stashed twice.
    */
   paymentSignature?: string;
 }
@@ -158,14 +144,13 @@ export interface BuildBasketInput {
 export interface BuiltBasket extends Packed {
   quotes: JupiterQuote[];
   /**
-   * Every account the swap instructions read or write: pools, oracles,
-   * vaults, and the user's own token accounts. A local fork uses this list to
-   * re-pull pool state from mainnet before sending (ISSUES #7).
+   * Every account the swaps touch. The fork re-pulls these from mainnet
+   * before sending.
    */
   routeAccounts: string[];
 }
 
-/** Quotes every leg, fetches Jupiter's instructions and lookup tables, then packs. */
+/** Quotes every leg, gets Jupiter's instructions and lookup tables, and packs them. */
 export async function buildBasket(input: BuildBasketInput): Promise<BuiltBasket> {
   const quotes: JupiterQuote[] = [];
   const setup: TransactionInstruction[][] = [];
@@ -181,7 +166,7 @@ export async function buildBasket(input: BuildBasketInput): Promise<BuiltBasket>
     });
     const ixs = await swapInstructions(quote, input.owner, treasuryFeeAccount(input.treasury, leg.mint));
     if (ixs.otherInstructions?.length || ixs.cleanupInstruction) {
-      // Not seen for USDC -> xStocks so far. Refuse instead of guessing where they go.
+      // Haven't seen these for USDC to xStocks. Refuse rather than guess.
       throw new Error(`Jupiter returned extra instructions for ${leg.symbol} that Stash does not place yet.`);
     }
     quotes.push(quote);

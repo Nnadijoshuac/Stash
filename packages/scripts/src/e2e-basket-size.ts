@@ -1,15 +1,11 @@
 /**
- * End to end, against mainnet, without signing or sending anything.
+ * Builds a basket from real mainnet quotes and prints its size, without
+ * signing or sending anything.
  *
- * Runs the real core logic on real Jupiter quotes and real lookup tables:
- * allocate a payment by a rule, quote every leg with Stash's fee, pack the
- * legs into one transaction, and print what was built. This is the evidence
- * behind "the whole basket fits in one transaction".
+ *   pnpm basket-size [--receipt]
  *
- *   pnpm basket-size
- *
- * The owner and treasury are throwaway addresses, so the owner has no token
- * accounts yet: the numbers are for a first-time user, the largest case.
+ * The owner is a fresh address with no token accounts, so these are the
+ * biggest numbers a first-time user would hit.
  */
 import { Connection, Keypair } from "@solana/web3.js";
 import bs58 from "bs58";
@@ -20,27 +16,18 @@ const connection = new Connection(RPC, "confirmed");
 const owner = Keypair.generate().publicKey.toBase58();
 const treasury = Keypair.generate().publicKey.toBase58();
 
-/** `pnpm basket-size --receipt` also packs the on-chain stash receipt. */
+/** --receipt also packs the on-chain receipt. */
 const withReceipt = process.argv.includes("--receipt");
 const SAMPLE_PAYMENT = bs58.encode(Buffer.alloc(64, 7));
 
 const SPY = "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W";
 const NVDA = "Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh";
-const TSLA = "XsDoVfqeBukxuZHWhdvWHBhgEHjGNst4MLodqsJHzoB";
 
 const cases: { label: string; paymentUsdc: bigint; rule: StashRule }[] = [
   {
     label: "20% of $500 -> 60% S&P 500, 40% Nvidia",
     paymentUsdc: 500_000_000n,
     rule: { stashBps: 2_000, basket: [{ mint: SPY, weightBps: 6_000 }, { mint: NVDA, weightBps: 4_000 }] },
-  },
-  {
-    label: "20% of $500 -> 50% S&P 500, 30% Nvidia, 20% Tesla",
-    paymentUsdc: 500_000_000n,
-    rule: {
-      stashBps: 2_000,
-      basket: [{ mint: SPY, weightBps: 5_000 }, { mint: NVDA, weightBps: 3_000 }, { mint: TSLA, weightBps: 2_000 }],
-    },
   },
 ];
 
@@ -53,7 +40,7 @@ for (const c of cases) {
       owner,
       treasury,
       allocation,
-      // A made-up payment signature: enough to measure the on-chain receipt's bytes.
+      // Any signature will do to measure the receipt.
       ...(withReceipt ? { paymentSignature: SAMPLE_PAYMENT } : {}),
     });
     allocation.legs.forEach((leg, i) => {

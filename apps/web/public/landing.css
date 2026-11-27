@@ -1,8 +1,6 @@
 /*
- * Stash landing, built to Draw's system: modest type, two-line headings (a
- * plain line, then a muted italic one), small sentence-case labels, short copy.
- * Colours are Stash's own: navy hero under a transparent nav, milk sections,
- * and a fade from milk to blue that ends the page with the wordmark.
+ * Landing page. Navy hero under a see-through nav, light sections, and a fade
+ * into blue at the bottom with the wordmark.
  */
 :root {
   --navy: oklch(15% 0.022 262);
@@ -31,8 +29,7 @@ a:focus-visible { outline: 2px solid var(--orange); outline-offset: 3px; border-
 
 /* ---------------------------------------------------------------- nav */
 .nav {
-  /* Transparent; a light blur keeps it readable. Text colour follows the
-     section underneath (landing.js). */
+  /* See-through with a blur. landing.js flips the text colour per section. */
   position: fixed; inset: 0 0 auto; z-index: 50; height: var(--nav-h);
   backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
   color: var(--on-navy); transition: color 200ms ease-out;
@@ -92,7 +89,7 @@ a:focus-visible { outline: 2px solid var(--orange); outline-offset: 3px; border-
 .prose.wide { max-width: 54ch; margin-top: 32px; }
 .two { margin-top: 40px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 48px; align-items: start; }
 
-/* The problem: three questions, italic, ruled. */
+/* The problem */
 .asks { list-style: none; margin: 0; padding: 0; }
 .asks li { padding: 14px 0; border-bottom: 1px solid var(--line); font-size: 16px; font-style: italic; color: var(--muted); }
 .asks li:first-child { padding-top: 0; }
@@ -104,13 +101,13 @@ a:focus-visible { outline: 2px solid var(--orange); outline-offset: 3px; border-
 .steps h3 { font-size: 19px; font-weight: 500; letter-spacing: -0.01em; }
 .steps p { margin-top: 8px; max-width: 56ch; font-size: 16px; line-height: 1.65; color: var(--muted); }
 
-/* Why Solana: a short definition list. */
+/* Why Solana */
 .defs > div { padding: 16px 0; border-bottom: 1px solid var(--line); }
 .defs > div:first-child { padding-top: 0; }
 .defs dt { font-size: 15px; font-weight: 500; }
 .defs dd { margin-top: 4px; font-size: 15px; line-height: 1.6; color: var(--muted); }
 
-/* What is actually built: three small numbers in one quiet card. */
+/* What's built */
 .numbers {
   margin-top: 40px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
   border: 1px solid var(--line); border-radius: 14px; background: #fff; overflow: hidden;
@@ -121,16 +118,14 @@ a:focus-visible { outline: 2px solid var(--orange); outline-offset: 3px; border-
 .n-label { margin-top: 4px; font-size: 14px; color: var(--muted); }
 .fine { margin-top: 20px; font-size: 14px; line-height: 1.6; color: var(--muted); }
 
-/* Closing line */
+/* Closing */
 .closing { text-align: center; }
 .closing h2 { margin: 0 auto; max-width: 18ch; font-size: clamp(2rem, 5vw, 3.25rem); line-height: 1.05; }
 .closing .btn { margin-top: 32px; }
 
 /* ---------------------------------------------------------------- footer
- * The page ends on the fade: milk easing into blue (blended in OKLCH so it
- * stays blue), the one-line credit, then the wordmark. It stops at a mid-dark
- * blue, not the deep navy.
- */
+ * Fades from the page colour into blue. Blending in OKLCH keeps the middle
+ * from going grey. */
 .footer {
   position: relative; overflow: hidden; padding-top: clamp(140px, 16vw, 240px);
   background: linear-gradient(in oklch 180deg,

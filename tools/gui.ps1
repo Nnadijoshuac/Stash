@@ -1,13 +1,11 @@
 <#
-  Drives the real desktop to test Stash's UI the way a person would:
-  open the app in Brave on the extended screen, take screenshots, click,
-  type, press keys and scroll.
+  Drives the desktop to test Stash like a person would: open a page in Brave,
+  take screenshots, click, type, press keys and scroll.
 
-  Coordinates for click and scroll are relative to the screen being tested
-  (the PRIMARY screen by default; pass -Extended for the other one), in real
-  pixels, matching the screenshots this script takes. The owner's extended
-  screen is often in use, so it is never touched unless asked for. The process is made DPI-aware first, because the primary
-  screen is scaled to 150% and unscaled coordinates land in the wrong place.
+  Coordinates are in real pixels on the screen being tested, matching the
+  screenshots. That's the primary screen unless you pass -Extended; the other
+  monitor is left alone. The script is DPI-aware because the primary screen is
+  scaled to 150%.
 
   Examples:
     .\tools\gui.ps1 open  -Url http://localhost:4321
@@ -93,15 +91,9 @@ switch ($Action) {
   'info' { "$($screen.DeviceName) $($b.X),$($b.Y) $($b.Width)x$($b.Height)" }
 
   'open' {
-    # Opens the URL in a new Brave window, then moves ONLY a window whose title
-    # contains -Title (default 'Stash'). It never touches any other window, so
-    # the owner's YouTube or anything else in Brave stays where it is
-    # (ISSUES #11).
-    if (-not $Title) { $Title = 'Stash' }
-    # Prefer a new TAB in a Brave window already on this screen (owner's
-    # request, 27 Nov). Only a window on the chosen screen is used, so a tab
-    # never lands in the owner's window on the other screen. A new window is
-    # opened only when this screen has no Brave window at all.
+    # Opens the URL in a new tab of a Brave window already on this screen, so
+    # nothing lands on the other monitor. Only opens a new window if this screen
+    # has none. Then it only moves the window whose title contains -Title.
     $existing = [GuiNative]::FindBraveOn($b.X, $b.Y, $b.Width, $b.Height)
     if ($existing -ne [IntPtr]::Zero) {
       [GuiNative]::keybd_event(0x12, 0, 0, [UIntPtr]::Zero); [GuiNative]::keybd_event(0x12, 0, 2, [UIntPtr]::Zero)
@@ -129,8 +121,7 @@ switch ($Action) {
   }
 
   'focus' {
-    # Brings the window whose title contains -Title to the front on the chosen
-    # screen. Keys then go to the app, not to whatever was in front.
+    # Brings the -Title window to the front so keys go to it.
     $h = [GuiNative]::FindByTitle($Title, ' - Brave')
     if ($h -eq [IntPtr]::Zero) { throw "No Brave window titled '$Title - Brave'." }
     [GuiNative]::keybd_event(0x12, 0, 0, [UIntPtr]::Zero); [GuiNative]::keybd_event(0x12, 0, 2, [UIntPtr]::Zero)
@@ -142,10 +133,8 @@ switch ($Action) {
   }
 
   'resize' {
-    # Shrinks the window titled -Title to -Width x -Height at the screen's
-    # top-left, to see phone and tablet layouts. Browsers have a minimum
-    # window width (about 500px), so true phone widths need a headless
-    # screenshot instead.
+    # Resizes the -Title window to check narrow layouts. Brave won't go below
+    # about 740px wide; use tools/phone-frames.html for real phone widths.
     $h = [GuiNative]::FindByTitle($Title, ' - Brave')
     if ($h -eq [IntPtr]::Zero) { throw "No Brave window titled like '$Title'." }
     [void][GuiNative]::ShowWindow($h, 9)
@@ -173,7 +162,7 @@ switch ($Action) {
   }
 
   'type' {
-    # SendKeys treats + ^ % ~ ( ) { } [ ] as commands; escape them so text types literally.
+    # SendKeys treats + ^ % ~ ( ) { } [ ] as commands, so escape them.
     $escaped = [regex]::Replace($Text, '[+^%~(){}\[\]]', { param($m) '{' + $m.Value + '}' })
     [System.Windows.Forms.SendKeys]::SendWait($escaped)
     "typed $($Text.Length) characters"

@@ -1,17 +1,7 @@
 /**
- * Checking a transaction the user signed before the server sends it.
- *
- * The server builds a stash or a sale and hands the browser an unsigned
- * transaction. The browser signs it with the user's wallet and sends it back.
- * Before anything goes to the network, the server confirms two things:
- *
- *   1. The message is byte-for-byte the one it built. A client cannot return
- *      a different transaction (another amount, another token, another
- *      recipient) under the same build.
- *   2. The owner's signature over that message is valid.
- *
- * The server never holds the user's key, so this is the only point where it
- * can be sure what it is about to send.
+ * Checks a transaction the browser signed before we send it. It has to be
+ * byte for byte what we built, and signed by the owner. The server never has
+ * the user's key, so this is where we make sure we only send what we built.
  */
 import { PublicKey, VersionedTransaction } from "@solana/web3.js";
 import { ed25519 } from "@noble/curves/ed25519";
@@ -20,7 +10,7 @@ export interface VerifiedTransaction {
   transaction: VersionedTransaction;
 }
 
-/** Throws with a plain reason if the signed transaction may not be sent. */
+/** Throws with the reason if the signed transaction can't be sent. */
 export function verifySignedTransaction(
   expectedMessage: Uint8Array,
   signedBase64: string,

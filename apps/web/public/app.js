@@ -1,10 +1,8 @@
-// Stash client. All money logic lives on the server in @stash/core; this file
-// holds the wallet, signs what the server builds, and renders.
+// The browser side. It holds the wallet, signs what the server builds, and
+// draws the page. All the money logic is on the server.
 //
-// NON-CUSTODIAL: the server builds unsigned transactions; this page signs
-// them with the user's wallet and sends them back. On the local fork the
-// wallet is a keypair generated in this browser and kept in localStorage
-// (fake money only). On mainnet the same `wallet` object would wrap Phantom.
+// On the fork the wallet is a keypair kept in localStorage (test money only).
+// On mainnet the same `wallet` object would wrap Phantom.
 
 const $ = (id) => document.getElementById(id);
 const { Keypair, VersionedTransaction } = window.solanaWeb3;
@@ -23,7 +21,7 @@ const wallet = (() => {
   return {
     isNew,
     publicKey: kp.publicKey.toBase58(),
-    /** Signs a base64 unsigned transaction from the server; returns base64. */
+    /** Signs a base64 transaction from the server and returns it as base64. */
     signTransaction(base64) {
       const tx = VersionedTransaction.deserialize(Uint8Array.from(atob(base64), (c) => c.charCodeAt(0)));
       tx.sign([kp]);
@@ -39,14 +37,14 @@ const BASKET_COLOURS = ["#ff5a1f", "oklch(21% 0.035 262)", "oklch(72% 0.08 255)"
 const short = (a) => `${a.slice(0, 4)}…${a.slice(-4)}`;
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
-/** "$12.50" -> "12500000" (USDC base units), using string maths, never floats. */
+/** "$12.50" to "12500000" base units, with string maths so no float errors. */
 function toBaseUnits(dollars) {
   const s = String(dollars).trim().replace(/^\$/, "").replace(/,/g, "");
   if (!/^\d+(\.\d{0,6})?$/.test(s)) throw new Error("Enter a dollar amount like 500 or 12.50.");
   const [whole, frac = ""] = s.split(".");
   return (BigInt(whole) * 1000000n + BigInt(frac.padEnd(6, "0"))).toString();
 }
-/** Base units -> "$1,234.56". */
+/** Base units to "$1,234.56". */
 function usd(base) {
   const b = BigInt(base);
   const whole = (b / 1000000n).toLocaleString("en-US");
@@ -75,9 +73,8 @@ async function api(path, body) {
 }
 
 /**
- * Build on the server, sign here, submit. `onStep` reports real progress
- * (building, signing, sending). On a retryable refusal (prices moved, build
- * expired) it builds and signs once more.
+ * Build on the server, sign here, submit. `onStep` reports progress. If the
+ * server says prices moved or the build expired, it tries once more.
  */
 async function buildSignSubmit(buildPath, body, onStep = () => {}) {
   for (let attempt = 1; attempt <= 2; attempt++) {
@@ -103,7 +100,7 @@ function render() {
   $("app").hidden = !eligible;
   if (!eligible) return;
 
-  // Hero: the biggest number is what has been stashed.
+  // The big number is what's been stashed.
   $("stashed-total").textContent = dollars(state.stashedUsd || 0);
   const stashedCount = state.stashes.length;
   $("hero-sub").textContent =
@@ -264,7 +261,7 @@ async function openStash(signature) {
         <span><span class="leg-name">${esc(l.tracks)}</span><span class="leg-route">${esc(l.symbol)} · via ${esc(l.route)}</span></span>
         <span class="leg-amt">${usd(l.usdc)}<span class="leg-shares">≈ ${l.expectedShares.toFixed(6)} ${esc(l.symbol)}</span></span>
       </li>`).join("")}</ul>
-      <p class="proof">One Solana transaction (${p.bytes} of 1,232 bytes). Every stock lands, or nothing moves.
+      <p class="proof">One Solana transaction (${p.bytes} of 1,232 bytes). If one swap fails, none of them go through.
         Includes Stash's ${p.legs[0].feeBps / 100}% fee.</p>
       <button class="btn btn-primary btn-lg" id="confirm-stash">Sign &amp; stash ${usd(p.stashUsdc)}</button>`;
     $("confirm-stash").onclick = () => runStash(signature, p);
@@ -282,7 +279,7 @@ async function runStash(signature, preview) {
   };
   try {
     const r = await buildSignSubmit("/api/stash/build", { paymentSignature: signature }, step);
-    // The peak moment: the splat lands (DESIGN.md).
+    // Splat.
     $("sheet-body").innerHTML = `<div class="success">
       <img class="splat-land" src="/brand/stash-splat-192.png" alt="">
       <p class="eyebrow-dark" id="sheet-title">Stashed</p>
@@ -375,7 +372,7 @@ $("rule-form").onsubmit = async (ev) => {
       const pct = Number(document.querySelector(`input[data-w="${i}"]`).value);
       if (mint) basket.push({ mint, weightBps: Math.round(pct * 100) });
     }
-    // The rule lives on chain: the wallet signs it like any other transaction.
+    // The rule is on chain, so the wallet signs it like anything else.
     await buildSignSubmit("/api/rule/build", { stashBps: Math.round(Number($("stash-pct").value) * 100), basket });
     editingRule = false;
     await refresh();
@@ -386,7 +383,7 @@ $("receive-form").onsubmit = async (ev) => {
   ev.preventDefault();
   const btn = $("receive-btn");
   btn.disabled = true;
-  btn.textContent = "Receiving…"; // the payer's transfer takes a few seconds (ISSUES #14)
+  btn.textContent = "Receiving…"; // the transfer takes a few seconds
   try {
     await api("/api/receive", { owner, usdc: toBaseUnits($("receive-amount").value) });
     await refresh();
@@ -419,7 +416,7 @@ $("holdings").onclick = (ev) => {
   try {
     if (wallet.isNew) await api("/api/dev/fund", { owner });
     await refresh();
-    // A restarted fork forgets this wallet's SOL, so top it up for fees.
+    // A restarted fork forgets this wallet's SOL. Top it up for fees.
     if (state.sol < 50_000_000) {
       await api("/api/dev/fund", { owner });
       await refresh();

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { STOCKS, isAllowlisted, stockForMint } from "./allowlist";
 
-// A real impostor seen in Jupiter's search on 25 Nov 2026: "NVDAXa", "NVIDA xStcok".
+// A real impostor from a Jupiter search: "NVDAXa", "NVIDA xStcok".
 const IMPOSTOR_NVDA = "uBMY7k6fNhvSXDTe7ipDZJfEE6JTTb7tCo2o4Dqpump";
 
 describe("allowlist", () => {

@@ -12,7 +12,7 @@
 </head>
 <body>
   <div class="shell">
-    <!-- Sidebar (Mercury dashboard). -->
+    <!-- Sidebar -->
     <aside class="sidebar">
       <a class="brand" href="/" title="Back to the Stash site">
         <img src="/brand/stash-splat-64.png" alt="" width="28" height="28"><span>Stash</span>
@@ -34,12 +34,12 @@
     <main class="main" id="home">
       <p id="error" class="error" role="alert" hidden></p>
 
-      <!-- First run: eligibility. Left-aligned split, not a centred modal. -->
+      <!-- First run: eligibility -->
       <section id="onboard" class="onboard" hidden>
         <div class="onboard-text">
           <p class="kicker">Before your first stash</p>
-          <h1>Get paid in dollars.<br>Keep some of it in stocks.</h1>
-          <p class="onboard-lede">Set a rule once. Every payment you receive drops a share into stocks like the S&amp;P 500, in one transaction your wallet signs.</p>
+          <h1>Invest every time<br>you get paid.</h1>
+          <p class="onboard-lede">Pick how much of each payment to keep and which stocks it buys. After that, each payment is one tap.</p>
           <div class="notice">xStocks are not available to US persons, or to people in Canada, the UK or Australia.</div>
           <label class="check"><input type="checkbox" id="eligible-check"> I am eligible to hold xStocks.</label>
           <button class="btn btn-primary btn-lg" id="eligible-btn">Continue</button>
@@ -48,7 +48,7 @@
       </section>
 
       <div id="app" hidden>
-        <!-- Greeting + action pills (Mercury). -->
+        <!-- Greeting and actions -->
         <header class="page-head">
           <div>
             <p class="kicker" id="greeting">Welcome back</p>
@@ -62,7 +62,7 @@
         </header>
 
         <div class="grid-top">
-          <!-- Balance card: the biggest number is what has been stashed. -->
+          <!-- Balance -->
           <section class="card balance" id="portfolio">
             <div class="balance-head">
               <div>
@@ -79,7 +79,7 @@
             </table>
           </section>
 
-          <!-- Rule card. -->
+          <!-- Rule -->
           <section class="card rule-card" id="rule">
             <div class="card-head">
               <p class="card-label">Your rule</p>
@@ -101,7 +101,7 @@
           </section>
         </div>
 
-        <!-- Payments table. -->
+        <!-- Payments -->
         <section class="card" id="payments-section">
           <div class="card-head">
             <div class="head-title"><h2>Payments</h2><span class="count" id="pending-count"></span></div>
@@ -121,15 +121,15 @@
           </section>
           <section class="card fine">
             <h2>How this demo runs</h2>
-            <p>A local copy of Solana mainnet with fake money. Pools, stock tokens and programs are real mainnet state; nothing costs anything.</p>
-            <p>Your test wallet's key stays in this browser. Stash builds each transaction, your wallet signs it, and Stash checks it is byte-for-byte what it built before sending.</p>
+            <p>This runs on a local copy of Solana mainnet. The pools and stock tokens are real; the money is fake.</p>
+            <p>Your test wallet's key stays in this browser. Stash builds each transaction, your wallet signs it, and Stash checks it's exactly what it built before sending it.</p>
           </section>
         </div>
       </div>
     </main>
   </div>
 
-  <!-- Right-hand drawer for stash and sell (not a centred modal). -->
+  <!-- Drawer for stashing and selling -->
   <div class="sheet-backdrop" id="sheet" hidden>
     <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
       <button class="sheet-close" id="sheet-close" aria-label="Close">×</button>

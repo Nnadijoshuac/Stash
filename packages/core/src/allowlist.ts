@@ -1,21 +1,17 @@
 /**
- * The only tokens Stash will ever buy.
+ * The only stocks Stash will buy.
  *
- * Anyone can mint a Token-2022 token called "NVIDIA xStock". On 25 Nov 2026 a
- * Jupiter search for NVDAx returned the real mint and several look-alikes
- * ("NVDAXa", mints ending in "pump") with thousands of dollars of liquidity
- * behind them. So a stock is never resolved from its symbol or name. It is
- * resolved from this list, and a mint that is not on it is refused.
- *
- * Every entry was read from Jupiter's verified token list (verified, tagged
- * xstocks, Token-2022, 8 decimals) on 25 Nov 2026.
+ * Anyone can mint a token called "NVIDIA xStock". Search Jupiter for NVDAx and
+ * you get the real one plus look-alikes with real liquidity. So we never look a
+ * stock up by name: these mints come from Jupiter's verified list, and
+ * anything else is refused.
  */
 
 export interface Stock {
-  /** Ticker as xStocks publish it, for display only. Never used for lookup. */
+  /** For display only. Never used to look a stock up. */
   symbol: string;
   name: string;
-  /** What the stock tracks, in words a non-crypto user understands. */
+  /** What it tracks, in plain words. */
   tracks: string;
   mint: string;
   decimals: number;
@@ -35,7 +31,7 @@ export function isAllowlisted(mint: string): boolean {
   return BY_MINT.has(mint);
 }
 
-/** Returns the stock for a mint, or throws if Stash does not buy it. */
+/** The stock for a mint. Throws if we don't buy it. */
 export function stockForMint(mint: string): Stock {
   const stock = BY_MINT.get(mint);
   if (!stock) {

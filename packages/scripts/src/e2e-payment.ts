@@ -1,13 +1,10 @@
 /**
- * The full promise, end to end on the fork: get paid, and stash that payment.
+ * Get paid, then stash that payment, on the fork.
  *
  *   pnpm fund && pnpm payment
  *
- * 1. The test payer sends the user $500 USDC in a real token transfer.
- * 2. Stash finds that payment by reading the chain (listIncomingPayments),
- *    not because anyone typed the amount in.
- * 3. It re-reads that one payment by signature and stashes 20% of exactly
- *    what arrived, in one transaction.
+ * The test payer sends $500 of USDC. We find it by reading the chain, read it
+ * again by signature, and stash 20% of exactly what arrived.
  */
 import { Connection } from "@solana/web3.js";
 import {
@@ -82,7 +79,7 @@ if (conf.value.err) throw new Error(`Stash failed on chain: ${stashSig}`);
 console.log(`\nStashed ${formatUsdc(allocation.stashUsdc)} of that payment in one transaction: ${stashSig}`);
 console.log(`  ${allocation.legs.map((l) => `${formatUsdc(l.usdc)} ${l.symbol}`).join(", ")}; ${sim.value.unitsConsumed} CU`);
 
-// The stash is the user's own action, so it must not show up as a payment.
+// The user signed the stash, so it mustn't show up as a payment.
 const after = await listIncomingPayments(connection, owner, { limit: 10 });
 if (after.some((p) => p.signature === stashSig)) {
   console.log("\nFAILED: the stash itself was counted as an incoming payment.");

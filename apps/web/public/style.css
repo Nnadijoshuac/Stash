@@ -1,6 +1,4 @@
-/* Stash /app. Mercury-style dashboard: sidebar, left-aligned greeting with
-   action pills, balance card beside a list card, calm tables. Tokens in
-   apps/web/DESIGN.md. Inter per the owner's rule. */
+/* The app at /app. Design tokens are in apps/web/DESIGN.md. */
 
 :root {
   --paper: oklch(97.6% 0.006 255);
@@ -94,7 +92,7 @@ button, input, select { font: inherit; color: inherit; }
 .alloc { display: flex; gap: 2px; height: 8px; border-radius: 999px; overflow: hidden; margin: 18px 0 6px; background: rgb(18 26 43 / 0.06); }
 .alloc span { display: block; }
 
-/* Tables (Mercury-calm) */
+/* Tables */
 .table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.92rem; }
 .table th { text-align: left; font-size: 0.75rem; font-weight: 600; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.05em; padding: 10px 8px; border-bottom: 1px solid var(--line); }
 .table td { padding: 12px 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
@@ -124,7 +122,7 @@ input[type="range"] { width: 100%; accent-color: var(--orange); }
 .hint { font-size: 0.8rem; color: var(--ink-3); }
 .row-end { display: flex; justify-content: flex-end; gap: 8px; }
 
-/* Payments list (rows, left-aligned) */
+/* Payments */
 .payments { list-style: none; margin: 0; padding: 0; }
 .payment { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 14px 4px; border-top: 1px solid var(--line); }
 .payment:first-child { border-top: 0; }
@@ -153,7 +151,7 @@ input[type="range"] { width: 100%; accent-color: var(--orange); }
 .act-amt { font-weight: 600; font-variant-numeric: tabular-nums; }
 .fine p { font-size: 0.88rem; color: var(--ink-2); margin-top: 10px; }
 
-/* ---------------------------------------------------------------- onboarding (split) */
+/* ---------------------------------------------------------------- onboarding */
 .onboard { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 0.8fr); align-items: center; gap: 40px; min-height: calc(100dvh - 92px); }
 .onboard h1 { font-size: clamp(2.2rem, 1.4rem + 3vw, 3.8rem); font-weight: 800; letter-spacing: -0.045em; line-height: 1.02; margin: 12px 0 18px; }
 .onboard-lede { color: var(--ink-2); font-size: 1.08rem; max-width: 520px; }
@@ -162,7 +160,7 @@ input[type="range"] { width: 100%; accent-color: var(--orange); }
 .check input { width: 18px; height: 18px; accent-color: var(--orange); }
 .onboard-splat { width: 100%; max-width: 520px; justify-self: end; animation: splat 600ms 100ms ease-out both; }
 
-/* ---------------------------------------------------------------- right drawer */
+/* ---------------------------------------------------------------- drawer */
 .sheet-backdrop { position: fixed; inset: 0; background: rgb(12 16 28 / 0.38); z-index: 20; animation: fade 160ms ease-out both; display: flex; justify-content: flex-end; }
 .sheet {
   position: relative; width: min(480px, 100%); height: 100%; overflow: auto; background: var(--card);
@@ -210,11 +208,11 @@ input[type="range"] { width: 100%; accent-color: var(--orange); }
   .grid-top, .grid-bottom { grid-template-columns: 1fr; }
 }
 @media (max-width: 820px) {
-  /* One column: the top bar must not take a share of the spare height. */
+  /* One column. Stop the top bar from stretching to fill spare height. */
   .shell { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
   .sidebar { position: sticky; top: 0; z-index: 10; height: auto; flex-direction: row; align-items: center; gap: 12px; padding: 12px 16px; overflow-x: auto; scrollbar-width: none; }
   .sidebar::-webkit-scrollbar { display: none; }
-  /* Nav jumps land below the sticky top bar, not under it. */
+  /* Keep nav jumps from landing under the sticky bar. */
   .main [id] { scroll-margin-top: 96px; }
   .brand { padding: 0; }
   .side-nav { display: flex; gap: 4px; }
