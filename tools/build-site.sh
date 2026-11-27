@@ -4,7 +4,8 @@
 # redirects to the README's run-locally steps instead of a page that cannot work.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-rm -rf site
+# Keep site/.vercel: it links this folder to the Vercel project "stash".
+find site -mindepth 1 -maxdepth 1 ! -name .vercel -exec rm -rf {} + 2>/dev/null || true
 mkdir -p site/brand
 cp apps/web/public/landing.html site/index.html
 cp apps/web/public/landing.css site/
