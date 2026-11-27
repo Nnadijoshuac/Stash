@@ -3,6 +3,8 @@ name = "stash"
 version = "0.1.0"
 description = "Stash: a user's stash rule and a receipt per stashed payment, on Solana."
 edition = "2021"
+# Solana's build tools bundle Cargo 1.84, so dependencies must build with it.
+rust-version = "1.84"
 
 [lib]
 crate-type = ["cdylib", "lib"]

@@ -1,0 +1,3 @@
+[resolver]
+# Pick dependency versions that still support our rust-version (see programs/stash).
+incompatible-rust-versions = "fallback"
