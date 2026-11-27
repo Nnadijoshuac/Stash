@@ -163,7 +163,7 @@ function renderRuleForm() {
   $("stash-pct").value = rule ? rule.stashBps / 100 : 20;
   $("stash-pct-out").textContent = `${$("stash-pct").value}%`;
   const current = rule ? rule.basket : [{ mint: state.stocks[0].mint, weightBps: 10000 }];
-  $("basket-rows").innerHTML = [0, 1, 2].map((i) => {
+  $("basket-rows").innerHTML = [0, 1].map((i) => {
     const pick = current[i];
     const options = ['<option value="">No stock</option>']
       .concat(state.stocks.map((s) => `<option value="${s.mint}" ${pick && pick.mint === s.mint ? "selected" : ""}>${esc(s.tracks)} · ${esc(s.symbol)}</option>`))
@@ -370,12 +370,13 @@ $("rule-form").onsubmit = async (ev) => {
   ev.preventDefault();
   try {
     const basket = [];
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 2; i++) {
       const mint = document.querySelector(`select[data-i="${i}"]`).value;
       const pct = Number(document.querySelector(`input[data-w="${i}"]`).value);
       if (mint) basket.push({ mint, weightBps: Math.round(pct * 100) });
     }
-    await api("/api/rule", { owner, stashBps: Math.round(Number($("stash-pct").value) * 100), basket });
+    // The rule lives on chain: the wallet signs it like any other transaction.
+    await buildSignSubmit("/api/rule/build", { stashBps: Math.round(Number($("stash-pct").value) * 100), basket });
     editingRule = false;
     await refresh();
   } catch (e) { showError(e.message); }

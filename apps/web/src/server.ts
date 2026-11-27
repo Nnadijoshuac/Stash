@@ -19,7 +19,7 @@ import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { extname, resolve, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { Connection, PublicKey } from "@solana/web3.js";
+import { Connection, PublicKey, TransactionMessage, VersionedTransaction } from "@solana/web3.js";
 import {
   STOCKS,
   USDC_MINT,
@@ -34,6 +34,10 @@ import {
   stockForMint,
   validateRule,
   verifySignedTransaction,
+  fetchOnChainRule,
+  isStashedOnChain,
+  setRuleInstruction,
+  STASH_PROGRAM_ID,
   type Allocation,
   type IncomingPayment,
   type StashRule,
@@ -92,8 +96,9 @@ function usdcField(body: Record<string, unknown>, field: string): bigint {
   return BigInt(raw);
 }
 
-function requireRule(owner: string): StashRule {
-  const { rule } = load(owner);
+/** The owner's rule, read from Stash's program on chain (not from our store). */
+async function requireRule(owner: string): Promise<StashRule> {
+  const rule = await fetchOnChainRule(connection, new PublicKey(owner));
   if (!rule) throw new Error("Set your rule first: how much to stash, and into which stocks.");
   return rule;
 }
@@ -107,6 +112,10 @@ async function requirePayment(owner: string, body: Record<string, unknown>): Pro
   if (!/^[1-9A-HJ-NP-Za-km-z]{64,90}$/.test(signature)) throw new Error("Choose a payment to stash.");
   const decided = load(owner).payments[signature];
   if (decided) throw new Error(`That payment was already ${decided.status}.`);
+  // The chain is the authority: a receipt means it was stashed, whatever our store says.
+  if (await isStashedOnChain(connection, new PublicKey(owner), signature)) {
+    throw new Error("That payment was already stashed.");
+  }
   const payment = await getIncomingPayment(connection, owner, signature);
   if (!payment) throw new Error("That transaction is not a payment into this wallet.");
   return payment;
@@ -128,7 +137,20 @@ routes["GET /api/state"] = async (_req, q) => {
     return { ...s, amount: amounts[i]!, usdPrice: price?.usdPrice ?? null, change24h: price?.change24h ?? null, usdValue: usdValue(amounts[i]!, s.decimals, price) };
   });
   const stashedUsd = holdings.reduce((sum, h) => sum + (h.usdValue ?? 0), 0);
-  return { network: "local mainnet fork (fake money)", owner, treasury, usdc, sol, holdings, stashedUsd, stocks: STOCKS, ...load(owner) };
+  const rule = await fetchOnChainRule(connection, new PublicKey(owner));
+  return {
+    network: "local mainnet fork (fake money)",
+    owner,
+    treasury,
+    program: STASH_PROGRAM_ID.toBase58(),
+    usdc,
+    sol,
+    holdings,
+    stashedUsd,
+    stocks: STOCKS,
+    ...load(owner),
+    rule, // from chain
+  };
 };
 
 routes["GET /api/payments"] = async (_req, q) => {
@@ -151,17 +173,6 @@ routes["POST /api/eligibility"] = async (req) => {
   return { ok: true };
 };
 
-routes["POST /api/rule"] = async (req) => {
-  const body = await readJson(req);
-  const owner = ownerKey(body.owner);
-  const rule = { stashBps: body.stashBps, basket: body.basket } as unknown as StashRule;
-  validateRule(rule);
-  const state = load(owner);
-  state.rule = { stashBps: rule.stashBps, basket: rule.basket.map((b) => ({ mint: b.mint, weightBps: b.weightBps })) };
-  save(owner, state);
-  return { ok: true, rule: state.rule };
-};
-
 routes["POST /api/skip"] = async (req) => {
   const body = await readJson(req);
   const owner = ownerKey(body.owner);
@@ -178,8 +189,8 @@ routes["POST /api/preview"] = async (req) => {
   const body = await readJson(req);
   const owner = ownerKey(body.owner);
   const payment = await requirePayment(owner, body);
-  const allocation = allocate(payment.amountUsdc, requireRule(owner));
-  const built = await buildBasket({ connection, owner, treasury, allocation });
+  const allocation = allocate(payment.amountUsdc, await requireRule(owner));
+  const built = await buildBasket({ connection, owner, treasury, allocation, paymentSignature: payment.signature });
   return {
     paymentSignature: payment.signature,
     paymentUsdc: payment.amountUsdc,
@@ -239,7 +250,7 @@ interface PendingBuild {
   routeAccounts: string[];
   expires: number;
   bytes: number;
-  kind: "stash" | "sell";
+  kind: "stash" | "sell" | "rule";
   payment?: IncomingPayment;
   allocation?: Allocation;
   mint?: string;
@@ -267,9 +278,10 @@ routes["POST /api/stash/build"] = async (req) => {
   if (!load(owner).eligibleConfirmedAt) throw new Error("Confirm you are eligible to hold xStocks before your first stash.");
   const payment = await requirePayment(owner, body);
   if (inFlight.has(payment.signature)) throw new Error("This payment is already being stashed.");
-  const allocation = allocate(payment.amountUsdc, requireRule(owner));
+  const allocation = allocate(payment.amountUsdc, await requireRule(owner));
   if ((await balance(owner, USDC_MINT)) < allocation.stashUsdc) throw new Error("Not enough USDC in the wallet for this stash.");
-  const built = await buildBasket({ connection, owner, treasury, allocation });
+  // The swaps and the on-chain receipt for this payment, in one transaction.
+  const built = await buildBasket({ connection, owner, treasury, allocation, paymentSignature: payment.signature });
   const buildId = remember({
     owner,
     kind: "stash",
@@ -280,6 +292,27 @@ routes["POST /api/stash/build"] = async (req) => {
     allocation,
   });
   return { buildId, transaction: unsigned(built.transaction), stashUsdc: allocation.stashUsdc, bytes: built.bytes };
+};
+
+/** An unsigned transaction that saves the owner's rule on chain. */
+routes["POST /api/rule/build"] = async (req) => {
+  const body = await readJson(req);
+  const owner = ownerKey(body.owner);
+  const rule = { stashBps: body.stashBps, basket: body.basket } as unknown as StashRule;
+  validateRule(rule); // the program makes the same checks; this gives friendlier words first
+  const clean: StashRule = {
+    stashBps: rule.stashBps,
+    basket: rule.basket.map((b) => ({ mint: b.mint, weightBps: b.weightBps })),
+  };
+  const { blockhash } = await connection.getLatestBlockhash("confirmed");
+  const message = new TransactionMessage({
+    payerKey: new PublicKey(owner),
+    recentBlockhash: blockhash,
+    instructions: [setRuleInstruction(new PublicKey(owner), clean)],
+  }).compileToV0Message();
+  const tx = new VersionedTransaction(message);
+  const buildId = remember({ owner, kind: "rule", message: message.serialize(), routeAccounts: [], bytes: tx.serialize().length });
+  return { buildId, transaction: unsigned(tx) };
 };
 
 /** An unsigned sale for the wallet to sign. */
@@ -340,6 +373,8 @@ routes["POST /api/submit"] = async (req) => {
     const usdcAfter = await balance(owner, USDC_MINT);
     const at = new Date().toISOString();
     const state = load(owner);
+
+    if (build.kind === "rule") return { kind: "rule", signature };
 
     if (build.kind === "stash") {
       const { payment, allocation } = build as Required<PendingBuild>;

@@ -12,12 +12,17 @@
  * accounts yet: the numbers are for a first-time user, the largest case.
  */
 import { Connection, Keypair } from "@solana/web3.js";
+import bs58 from "bs58";
 import { allocate, buildBasket, formatUsdc, stockForMint, type StashRule } from "@stash/core";
 
 const RPC = process.env.SOLANA_RPC_URL ?? "https://api.mainnet-beta.solana.com";
 const connection = new Connection(RPC, "confirmed");
 const owner = Keypair.generate().publicKey.toBase58();
 const treasury = Keypair.generate().publicKey.toBase58();
+
+/** `pnpm basket-size --receipt` also packs the on-chain stash receipt. */
+const withReceipt = process.argv.includes("--receipt");
+const SAMPLE_PAYMENT = bs58.encode(Buffer.alloc(64, 7));
 
 const SPY = "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W";
 const NVDA = "Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh";
@@ -43,7 +48,14 @@ for (const c of cases) {
   console.log(`\n${c.label}`);
   try {
     const allocation = allocate(c.paymentUsdc, c.rule);
-    const built = await buildBasket({ connection, owner, treasury, allocation });
+    const built = await buildBasket({
+      connection,
+      owner,
+      treasury,
+      allocation,
+      // A made-up payment signature: enough to measure the on-chain receipt's bytes.
+      ...(withReceipt ? { paymentSignature: SAMPLE_PAYMENT } : {}),
+    });
     allocation.legs.forEach((leg, i) => {
       const q = built.quotes[i]!;
       const stock = stockForMint(leg.mint);

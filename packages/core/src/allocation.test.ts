@@ -30,9 +30,8 @@ describe("allocate", () => {
     const rule: StashRule = {
       stashBps: 10_000,
       basket: [
-        { mint: SPY, weightBps: 3_334 },
+        { mint: SPY, weightBps: 6_667 },
         { mint: NVDA, weightBps: 3_333 },
-        { mint: TSLA, weightBps: 3_333 },
       ],
     };
     const a = allocate(10_000_001n, rule);
@@ -44,9 +43,8 @@ describe("allocate", () => {
     const rule: StashRule = {
       stashBps: 1_337,
       basket: [
-        { mint: SPY, weightBps: 5_001 },
+        { mint: SPY, weightBps: 7_001 },
         { mint: NVDA, weightBps: 2_999 },
-        { mint: TSLA, weightBps: 2_000 },
       ],
     };
     for (let p = 60_000_000n; p < 400_000_000n; p += 7_777_777n) {
@@ -83,9 +81,9 @@ describe("validateRule", () => {
     );
   });
 
-  it("refuses more than three stocks, because the basket must fit one transaction", () => {
-    const four = [SPY, NVDA, TSLA, AAPL].map((mint) => ({ mint, weightBps: 2_500 }));
-    expect(() => validateRule(rule(2_000, four))).toThrow(/at most 3 stocks/);
+  it("refuses more than two stocks, because the basket and its receipt must fit one transaction", () => {
+    const three = [{ mint: SPY, weightBps: 4_000 }, { mint: NVDA, weightBps: 3_000 }, { mint: TSLA, weightBps: 3_000 }];
+    expect(() => validateRule(rule(2_000, three))).toThrow(/at most 2 stocks/);
   });
 
   it("refuses the same stock twice", () => {

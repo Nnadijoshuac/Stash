@@ -24,6 +24,7 @@ import {
   TRANSACTION_SIZE_WARNING_BYTES,
 } from "./constants";
 import { quoteLeg, swapInstructions, toInstruction, type JupiterQuote } from "./jupiter";
+import { recordStashInstruction } from "./program";
 
 /**
  * The compute budget requested for a basket.
@@ -45,6 +46,8 @@ export interface PackInput {
   swaps: TransactionInstruction[];
   lookupTables: AddressLookupTableAccount[];
   recentBlockhash: string;
+  /** Placed after the swaps, e.g. the on-chain stash receipt. */
+  after?: TransactionInstruction[];
   computeUnitLimit?: number;
   computeUnitPriceMicroLamports?: number;
 }
@@ -89,6 +92,7 @@ export function packBasket(input: PackInput): Packed {
     }),
     ...setup,
     ...input.swaps,
+    ...(input.after ?? []),
   ];
 
   const message = new TransactionMessage({
@@ -143,6 +147,12 @@ export interface BuildBasketInput {
   treasury: string;
   allocation: Allocation;
   platformFeeBps?: number;
+  /**
+   * The payment being stashed. When given, the transaction also records an
+   * on-chain receipt for it (`programs/stash`), so the swaps and the receipt
+   * land together or not at all, and the same payment cannot be stashed twice.
+   */
+  paymentSignature?: string;
 }
 
 export interface BuiltBasket extends Packed {
@@ -194,6 +204,18 @@ export async function buildBasket(input: BuildBasketInput): Promise<BuiltBasket>
     swaps,
     lookupTables,
     recentBlockhash: blockhash,
+    ...(input.paymentSignature
+      ? {
+          after: [
+            recordStashInstruction(
+              new PublicKey(input.owner),
+              input.paymentSignature,
+              input.allocation.paymentUsdc,
+              input.allocation.stashUsdc,
+            ),
+          ],
+        }
+      : {}),
   });
   return { ...packed, quotes, routeAccounts: [...routeAccounts] };
 }

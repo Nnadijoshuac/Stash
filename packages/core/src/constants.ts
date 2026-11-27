@@ -25,10 +25,13 @@ export const TRANSACTION_SIZE_WARNING_BYTES = 1150;
 export const MAX_TRANSACTION_ACCOUNTS = 64;
 
 /**
- * Three legs measured 1,118 of 1,232 bytes and 47 accounts on 25 Nov 2026.
- * A fourth would not fit with Jupiter's lookup tables alone.
+ * Two stocks per basket. Every stash also records an on-chain receipt in the
+ * same transaction (159 bytes), and with it two legs measured 1,002 of 1,232
+ * bytes on 27 Nov 2026. Three legs alone measured 1,095 to 1,261 depending on
+ * Jupiter's route, so three plus a receipt never fits. Was 3 before the
+ * receipt existed.
  */
-export const MAX_BASKET_LEGS = 3;
+export const MAX_BASKET_LEGS = 2;
 
 /** Weights are expressed in basis points and must add up to exactly this. */
 export const FULL_WEIGHT_BPS = 10_000;

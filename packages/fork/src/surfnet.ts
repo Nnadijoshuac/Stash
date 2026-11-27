@@ -66,6 +66,23 @@ export async function setTokenBalance(owner: string, mint: string, amount: bigin
   await rpc("surfnet_setTokenAccount", [owner, mint, { amount: Number(amount) }, tokenProgram]);
 }
 
+/**
+ * Loads a compiled Solana program (.so) into the fork at `programId`, as an
+ * executable account of the BPF loader. Stash's program lives on devnet; the
+ * fork is a copy of mainnet, so it is written in here at funding time.
+ */
+export async function loadProgram(programId: string, elf: Buffer): Promise<void> {
+  await rpc("surfnet_setAccount", [
+    programId,
+    {
+      lamports: 1_000_000_000,
+      data: elf.toString("hex"),
+      owner: "BPFLoader2111111111111111111111111111111111",
+      executable: true,
+    },
+  ]);
+}
+
 /** Re-pulls one account from mainnet, replacing the fork's copy. */
 export async function resetAccount(account: string): Promise<void> {
   await rpc("surfnet_resetAccount", [account]);
