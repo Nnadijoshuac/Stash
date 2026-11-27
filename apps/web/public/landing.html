@@ -3,119 +3,129 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Stash · Get paid in dollars. Keep some of it in stocks.</title>
-  <meta name="description" content="Set a rule once. Every USDC payment you receive drops a share into tokenized stocks, in one Solana transaction.">
+  <title>Stash · Get paid in dollars. Keep some in stocks.</title>
+  <meta name="description" content="Set a rule once. Every USDC payment you receive buys a little of your stocks, in one Solana transaction.">
   <link rel="icon" type="image/png" href="/brand/stash-splat-64.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,900;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/landing.css">
 </head>
 <body>
-  <!-- One sticky bar, one link: the source (as Draw did). -->
   <nav class="nav">
     <div class="nav-inner">
-      <a class="brand" href="#top"><img src="/brand/stash-splat-64.png" alt="" width="28" height="28"><span>Stash</span></a>
-      <a class="nav-source" href="https://github.com/Nnadijoshuac/Stash">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 2-.27c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
-        Source
-      </a>
+      <a class="brand" href="#top"><img src="/brand/stash-splat-64.png" alt="" width="22" height="22"><span>Stash</span></a>
+      <a class="nav-link" href="https://github.com/Nnadijoshuac/Stash">Source</a>
     </div>
   </nav>
 
   <header class="hero" id="top" data-nav="dark">
     <div class="hero-body">
-      <p class="label">For anyone paid in USDC</p>
-      <h1>Get paid in dollars.<br>Keep some of it in&nbsp;<span class="accent">stocks.</span></h1>
-      <p class="lede">Set a rule once, like 20% of every payment into the S&amp;P&nbsp;500 and Nvidia.
-        Each payment you receive becomes a small basket of stocks, in one Solana transaction.</p>
+      <h1>Get paid in dollars.<span class="soft">Keep some in stocks.</span></h1>
+      <p class="lede">Every USDC payment you receive buys a little of the S&amp;P&nbsp;500. One rule, one tap, one transaction.</p>
       <div class="cta-row">
-        <a class="pill pill-orange pill-lg" href="https://github.com/Nnadijoshuac/Stash">View source</a>
-        <a class="pill pill-ghost pill-lg" href="#how">See how it works</a>
+        <a class="btn btn-orange" href="https://github.com/Nnadijoshuac/Stash">
+          <svg width="17" height="17" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 2-.27c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+          View source
+        </a>
       </div>
     </div>
     <img class="hero-splat" src="/brand/stash-splat-master.png" alt="">
   </header>
 
   <main>
+    <section class="section">
+      <div class="wrap">
+        <p class="label">The problem</p>
+        <h2>Dollars arrive<span class="soft">Nothing grows</span></h2>
+        <div class="two">
+          <div class="prose">
+            <p>Owning the S&amp;P&nbsp;500 from outside the US means a brokerage, identity checks, a wire that takes days, and a market that shuts on Friday.</p>
+            <p>So the money stays in USDC.</p>
+          </div>
+          <ul class="asks">
+            <li>What if every payment bought a little of it?</li>
+            <li>What if that took one tap?</li>
+            <li>What if the whole basket was one transaction?</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
     <section class="section" id="how">
       <div class="wrap">
         <p class="label">How it works</p>
-        <h2>Three steps. The last one is one tap.</h2>
+        <h2>Three steps for you<span class="soft">One transaction underneath</span></h2>
         <ol class="steps">
           <li>
             <span class="step-n">01</span>
             <div>
-              <h3>Set your rule</h3>
-              <p>Choose how much of each payment to keep and where it goes: one or two stocks. Your wallet signs it, and it lives on Solana.</p>
-            </div>
-            <div class="card">
-              <div class="mini-rule"><strong>20%</strong> of every payment</div>
-              <div class="mini-bar"><span style="flex:60"></span><span style="flex:40"></span></div>
-              <div class="mini-legend"><span>S&amp;P 500 · 60%</span><span>Nvidia · 40%</span></div>
+              <h3>Set a rule once</h3>
+              <p>20% of every payment: 60% S&amp;P&nbsp;500, 40% Nvidia. Your wallet signs it, and it lives on Solana.</p>
             </div>
           </li>
           <li>
             <span class="step-n">02</span>
             <div>
-              <h3>Get paid</h3>
-              <p>A client, an employer or a hackathon pays you in USDC. Stash reads it off the chain,
-                so the amount is never typed in.</p>
-            </div>
-            <div class="card">
-              <div class="mini-pay"><span class="mini-amt">$500.00</span><span class="mini-from">received · from A1Jd…oFtP</span></div>
+              <h3>Get paid in USDC</h3>
+              <p>Stash reads the payment off the chain. The amount is never typed in.</p>
             </div>
           </li>
           <li>
             <span class="step-n">03</span>
             <div>
-              <h3>Stash it</h3>
-              <p>One tap. Your wallet signs one transaction that buys the whole basket: every stock
-                lands, or nothing moves.</p>
-            </div>
-            <div class="card">
-              <div class="mini-done"><img src="/brand/stash-splat-64.png" alt="" width="28" height="28">
-                <span><strong>$100.00 stashed</strong><br>$60.00 S&amp;P 500 · $40.00 Nvidia</span></div>
+              <h3>Tap stash</h3>
+              <p>One transaction buys every stock in the rule. All of it lands, or none of it does.</p>
             </div>
           </li>
         </ol>
       </div>
     </section>
 
-    <section class="section" id="solana">
+    <section class="section">
       <div class="wrap">
-        <p class="label">Built on Solana</p>
-        <h2>A whole basket in one transaction.</h2>
-        <p class="sub">Tokenized stocks exist on several chains. What Stash needs from Solana is narrower and measurable:
-          several stocks, routed by Jupiter, bought atomically for a fraction of a cent, on a Sunday as easily as a Tuesday.</p>
-        <div class="numbers">
-          <div><span class="n">1</span><span class="n-label">transaction per stash, swaps and all</span></div>
-          <div><span class="n">843<small> / 1,232</small></span><span class="n-label">bytes for a two-stock basket</span></div>
-          <div><span class="n">0.5%</span><span class="n-label">Stash's fee, taken through Jupiter</span></div>
-          <div><span class="n">24/7</span><span class="n-label">xStocks trade outside market hours</span></div>
+        <p class="label">Why Solana</p>
+        <h2>A basket is<span class="soft">one transaction</span></h2>
+        <div class="two">
+          <p class="prose">Every stock in the basket settles together. There is no moment where half of it is bought and the rest failed.</p>
+          <dl class="defs">
+            <div><dt>Open at 3am on a Sunday</dt><dd>Tokenized stocks trade when the stock market is shut.</dd></div>
+            <div><dt>Every stock or none</dt><dd>Jupiter routes each one; Solana settles them as one.</dd></div>
+            <div><dt>Fractions of a cent</dt><dd>A $5 stash is worth doing.</dd></div>
+            <div><dt>Your key, your stocks</dt><dd>Stash builds the transaction. Your wallet signs it.</dd></div>
+          </dl>
         </div>
-        <p class="fine">Measured on a local copy of Solana mainnet, November 2026.</p>
       </div>
     </section>
 
-    <section class="section" id="fine-print">
-      <div class="wrap split">
-        <div>
-          <p class="label">Before you start</p>
-          <h2>Your keys. Your stocks.</h2>
+    <section class="section">
+      <div class="wrap">
+        <p class="label">What is actually built</p>
+        <h2>Not a mockup<span class="soft">Real pools, real stock tokens</span></h2>
+        <p class="prose wide">Stash runs against a forked Solana mainnet: Jupiter's live routes, the real xStocks mints, real pools. Test balances, real state.</p>
+        <div class="numbers">
+          <div><p class="n">1</p><p class="n-label">transaction per stash</p></div>
+          <div><p class="n">843</p><p class="n-label">bytes, under the 1,232 limit</p></div>
+          <div><p class="n">0.5%</p><p class="n-label">Stash's fee, taken through Jupiter</p></div>
         </div>
-        <ul class="facts">
-          <li><strong>Your key stays with you.</strong> Stash builds each transaction; your wallet signs it; Stash checks it is byte-for-byte what it built before sending.</li>
-          <li><strong>Not for everyone.</strong> xStocks are not available to US persons, or to people in Canada, the UK or Australia.</li>
-          <li><strong>A 0.5% fee</strong> on each stock bought or sold, taken through Jupiter.</li>
-          <li><strong>Test money for now.</strong> The demo runs on a copy of Solana mainnet: real pools and real stock tokens, with test balances.</li>
-        </ul>
+        <p class="fine">xStocks are not available to US persons, or in Canada, the UK or Australia.</p>
+      </div>
+    </section>
+
+    <section class="section closing">
+      <div class="wrap">
+        <h2>Get paid.<span class="soft">Keep some.</span></h2>
+        <a class="btn btn-ink" href="https://github.com/Nnadijoshuac/Stash">Read the source</a>
       </div>
     </section>
   </main>
 
   <!-- The page ends on the fade, with the wordmark at the bottom. -->
   <footer class="footer">
+    <div class="wrap foot">
+      <span>Stash · get paid in dollars, keep some in stocks</span>
+      <span>Built for the Dev3pack Global Hackathon · running on a forked Solana mainnet</span>
+    </div>
     <div class="giant" aria-hidden="true">Stash</div>
   </footer>
   <script src="/landing.js" defer></script>

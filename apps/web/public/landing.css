@@ -1,173 +1,147 @@
 /*
- * Stash landing.
- * Navy hero (the nav shares its colour, so the top reads as one block, no
- * dividing line). Every section after it is milk off-white with ink text.
- * The page then fades from milk into the navy footer, so the colour change is
- * gradual, never a hard edge. One accent: Stash orange. Inter only.
+ * Stash landing, built to Draw's system: modest type, two-line headings (a
+ * plain line, then a muted italic one), small sentence-case labels, short copy.
+ * Colours are Stash's own: navy hero under a transparent nav, milk sections,
+ * and a fade from milk to blue that ends the page with the wordmark.
  */
 :root {
   --navy: oklch(15% 0.022 262);
   --paper: oklch(97.6% 0.006 255);
-  --ink: oklch(19% 0.03 262);
-  --ink-2: oklch(45% 0.025 262);
-  --ink-3: oklch(58% 0.02 262);
-  --line: rgb(18 26 43 / 0.1);
+  --ink: #0b0d12;
+  --muted: #5b6472;
+  --line: #e2e6ee;
   --on-navy: oklch(97% 0.004 262);
   --on-navy-2: oklch(76% 0.018 262);
-  --on-navy-3: oklch(62% 0.02 262);
   --orange: #ff5a1f;
   --orange-press: #e84c14;
-  --nav-h: 68px;
+  --nav-h: 60px;
+  --radius: 10px;
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html { scroll-behavior: smooth; scroll-padding-top: var(--nav-h); }
 body {
-  margin: 0; font-family: Inter, system-ui, sans-serif; color: var(--ink); background: var(--paper);
-  line-height: 1.55; -webkit-font-smoothing: antialiased;
+  margin: 0; font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-size: 15px;
+  color: var(--ink); background: var(--paper); line-height: 1.55; -webkit-font-smoothing: antialiased;
 }
-h1, h2, h3, p { margin: 0; }
+h1, h2, h3, p, dl, dd { margin: 0; }
 a { color: inherit; }
 a:focus-visible { outline: 2px solid var(--orange); outline-offset: 3px; border-radius: 4px; }
-.wrap { max-width: 1200px; margin: 0 auto; padding: 0 clamp(20px, 5vw, 64px); }
+.wrap { max-width: 1024px; margin: 0 auto; padding: 0 24px; }
 
 /* ---------------------------------------------------------------- nav */
 .nav {
-  /* Transparent: it floats over whatever is under it. A light blur keeps the
-     words readable; the text colour follows the section below (landing.js). */
+  /* Transparent; a light blur keeps it readable. Text colour follows the
+     section underneath (landing.js). */
   position: fixed; inset: 0 0 auto; z-index: 50; height: var(--nav-h);
-  background: transparent; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
   color: var(--on-navy); transition: color 200ms ease-out;
 }
+.nav-inner { height: 100%; max-width: 1024px; margin: 0 auto; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; }
+.brand { display: flex; align-items: center; gap: 8px; text-decoration: none; }
+.brand span { font-weight: 600; font-size: 16px; letter-spacing: -0.02em; }
+.nav-link { text-decoration: none; font-size: 14px; color: var(--on-navy-2); transition: color 150ms ease-out; }
+.nav-link:hover { color: var(--on-navy); }
 .nav.on-light { color: var(--ink); }
-.nav.on-light .nav-source { color: var(--ink-2); }
-.nav.on-light .nav-source:hover { color: var(--ink); }
-.nav-inner {
-  height: 100%; max-width: 1200px; margin: 0 auto; padding: 0 clamp(20px, 5vw, 64px);
-  display: flex; align-items: center; justify-content: space-between;
-}
-.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
-.brand span { font-weight: 800; font-size: 1.25rem; letter-spacing: -0.03em; }
-.nav-source {
-  display: inline-flex; align-items: center; gap: 8px; text-decoration: none;
-  font-weight: 500; font-size: 0.95rem; color: var(--on-navy-2); transition: color 150ms ease-out;
-}
-.nav-source:hover { color: var(--on-navy); }
+.nav.on-light .nav-link { color: var(--muted); }
+.nav.on-light .nav-link:hover { color: var(--ink); }
 
-/* ---------------------------------------------------------------- pills */
-.pill {
-  display: inline-flex; align-items: center; justify-content: center; text-decoration: none; font-weight: 600;
-  border-radius: 999px; padding: 10px 18px; transition: scale 150ms ease-out, background-color 150ms ease-out;
+/* ---------------------------------------------------------------- buttons */
+.btn {
+  display: inline-flex; align-items: center; gap: 10px; text-decoration: none;
+  border-radius: var(--radius); padding: 14px 24px; font-size: 15px; font-weight: 500;
+  transition: background-color 150ms ease-out, opacity 150ms ease-out, scale 150ms ease-out;
 }
-.pill:active { scale: 0.97; }
-.pill-orange { background: var(--orange); color: #fff; }
-.pill-orange:hover { background: var(--orange-press); }
-.pill-ghost { color: var(--on-navy); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.25); }
-.pill-ghost:hover { background: rgb(255 255 255 / 0.06); }
-.pill-lg { padding: 15px 26px; font-size: 1.02rem; }
+.btn:active { scale: 0.98; }
+.btn-orange { background: var(--orange); color: #fff; }
+.btn-orange:hover { background: var(--orange-press); }
+.btn-ink { background: var(--ink); color: #fff; }
+.btn-ink:hover { opacity: 0.9; }
 
 /* ---------------------------------------------------------------- hero */
 .hero {
   position: relative; overflow: hidden; background: var(--navy); color: var(--on-navy);
-  min-height: min(100dvh, 920px); padding-top: var(--nav-h); display: flex; flex-direction: column;
+  min-height: min(100dvh, 860px); padding-top: var(--nav-h); display: flex; flex-direction: column;
 }
 .hero-body {
   position: relative; z-index: 2; flex: 1; display: flex; flex-direction: column; justify-content: center;
-  width: 100%; max-width: 1200px; margin: 0 auto; padding: 40px clamp(20px, 5vw, 64px) 96px;
+  width: 100%; max-width: 1024px; margin: 0 auto; padding: 32px 24px 88px;
 }
-.label {
-  font-size: 0.78rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
-  color: var(--ink-3); margin-bottom: 18px;
-}
-.hero .label { color: var(--on-navy-3); }
 .hero h1 {
-  font-size: clamp(2.6rem, 1.2rem + 4.4vw, 5.2rem); font-weight: 800; letter-spacing: -0.05em; line-height: 0.98;
-  max-width: 900px; text-wrap: balance;
+  max-width: 14ch; font-size: clamp(2.25rem, 5vw, 3.5rem); font-weight: 600; line-height: 1.04; letter-spacing: -0.035em;
 }
-.accent { color: var(--orange); }
-.lede { margin-top: 28px; font-size: clamp(1.05rem, 0.95rem + 0.4vw, 1.25rem); color: var(--on-navy-2); max-width: 540px; }
-.cta-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 36px; }
+.soft { display: block; font-weight: 400; font-style: italic; color: var(--muted); }
+.hero .soft { color: var(--on-navy-2); }
+.lede { margin-top: 20px; max-width: 34ch; font-size: 16px; line-height: 1.65; color: var(--on-navy-2); }
+.cta-row { margin-top: 32px; display: flex; gap: 12px; flex-wrap: wrap; }
 .hero-splat {
-  position: absolute; z-index: 1; right: -18vw; top: 50%; translate: 0 -46%;
-  width: min(54vw, 800px); height: auto; pointer-events: none;
-  animation: splat 700ms 150ms ease-out both;
+  position: absolute; z-index: 1; right: -14vw; top: 50%; translate: 0 -44%;
+  width: min(46vw, 640px); height: auto; pointer-events: none; animation: splat 700ms 150ms ease-out both;
 }
 
-/* ---------------------------------------------------------------- sections (milk) */
-.section { padding: clamp(72px, 9vw, 128px) 0; }
+/* ---------------------------------------------------------------- sections */
+.section { padding: clamp(64px, 8vw, 96px) 0; }
 .section + .section { border-top: 1px solid var(--line); }
+.label { font-size: 13px; font-weight: 500; color: var(--orange); }
 .section h2 {
-  font-size: clamp(2rem, 1.2rem + 3vw, 3.4rem); font-weight: 800; letter-spacing: -0.045em; line-height: 1.04;
-  max-width: 800px; text-wrap: balance;
+  margin-top: 20px; max-width: 20ch; font-size: clamp(1.75rem, 4vw, 2.75rem); font-weight: 600;
+  line-height: 1.08; letter-spacing: -0.03em;
 }
-.sub { margin-top: 22px; max-width: 660px; font-size: 1.08rem; color: var(--ink-2); }
+.prose { max-width: 46ch; font-size: 16px; line-height: 1.7; color: var(--muted); }
+.prose p + p { margin-top: 16px; }
+.prose.wide { max-width: 54ch; margin-top: 32px; }
+.two { margin-top: 40px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 48px; align-items: start; }
 
-.card {
-  background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 20px;
-  box-shadow: 0 10px 30px rgb(30 40 80 / 0.06);
-}
+/* The problem: three questions, italic, ruled. */
+.asks { list-style: none; margin: 0; padding: 0; }
+.asks li { padding: 14px 0; border-bottom: 1px solid var(--line); font-size: 16px; font-style: italic; color: var(--muted); }
+.asks li:first-child { padding-top: 0; }
 
 /* How it works */
-.steps { list-style: none; margin: 56px 0 0; padding: 0; border-top: 1px solid var(--line); }
-.steps li {
-  display: grid; grid-template-columns: 90px minmax(0, 1fr) minmax(0, 400px); gap: 32px; align-items: center;
-  padding: 40px 0; border-bottom: 1px solid var(--line);
-}
-.step-n { font-size: 0.95rem; font-weight: 700; color: var(--orange); font-variant-numeric: tabular-nums; }
-.steps h3 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 8px; }
-.steps p { color: var(--ink-2); max-width: 460px; }
-.mini-rule { font-size: 0.95rem; color: var(--ink-2); }
-.mini-rule strong { font-size: 2rem; color: var(--ink); letter-spacing: -0.04em; margin-right: 6px; }
-.mini-bar { display: flex; gap: 3px; height: 8px; border-radius: 999px; overflow: hidden; margin: 12px 0 10px; }
-.mini-bar span:first-child { background: var(--orange); }
-.mini-bar span:last-child { background: var(--navy); }
-.mini-legend { display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--ink-3); }
-.mini-pay { display: flex; flex-direction: column; }
-.mini-amt { font-size: 2rem; font-weight: 800; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
-.mini-from { font-size: 0.85rem; color: var(--ink-3); }
-.mini-done { display: flex; align-items: center; gap: 14px; font-size: 0.92rem; color: var(--ink-3); }
-.mini-done strong { color: var(--ink); font-size: 1.15rem; }
+.steps { list-style: none; margin: 40px 0 0; padding: 0; border-top: 1px solid var(--line); }
+.steps li { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 24px; padding: 28px 0; border-bottom: 1px solid var(--line); }
+.step-n { font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; padding-top: 3px; }
+.steps h3 { font-size: 19px; font-weight: 500; letter-spacing: -0.01em; }
+.steps p { margin-top: 8px; max-width: 56ch; font-size: 16px; line-height: 1.65; color: var(--muted); }
 
-/* Numbers: black figures on milk, split by hairlines only. */
+/* Why Solana: a short definition list. */
+.defs > div { padding: 16px 0; border-bottom: 1px solid var(--line); }
+.defs > div:first-child { padding-top: 0; }
+.defs dt { font-size: 15px; font-weight: 500; }
+.defs dd { margin-top: 4px; font-size: 15px; line-height: 1.6; color: var(--muted); }
+
+/* What is actually built: three small numbers in one quiet card. */
 .numbers {
-  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 64px;
-  border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+  margin-top: 40px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  border: 1px solid var(--line); border-radius: 14px; background: #fff; overflow: hidden;
 }
-.numbers > div { padding: 32px 24px 32px 0; display: flex; flex-direction: column; gap: 10px; }
-.numbers > div + div { padding-left: 24px; border-left: 1px solid var(--line); }
-.n {
-  font-size: clamp(2.2rem, 1.4rem + 2.4vw, 3.3rem); font-weight: 800; letter-spacing: -0.045em; line-height: 1;
-  color: #000; font-variant-numeric: tabular-nums;
-}
-.n small { font-size: 0.4em; font-weight: 600; color: var(--ink-3); letter-spacing: 0; }
-.n-label { color: var(--ink-2); font-size: 0.92rem; }
-.fine { margin-top: 18px; font-size: 0.82rem; color: var(--ink-3); }
+.numbers > div { padding: 24px 28px; }
+.numbers > div + div { border-left: 1px solid var(--line); }
+.n { font-size: 30px; font-weight: 600; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.n-label { margin-top: 4px; font-size: 14px; color: var(--muted); }
+.fine { margin-top: 20px; font-size: 14px; line-height: 1.6; color: var(--muted); }
 
-/* Before you start */
-.split { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: clamp(32px, 6vw, 96px); align-items: start; }
-.facts { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
-.facts li { padding: 22px 0; border-bottom: 1px solid var(--line); color: var(--ink-2); font-size: 1.02rem; }
-.facts strong { color: var(--ink); }
+/* Closing line */
+.closing { text-align: center; }
+.closing h2 { margin: 0 auto; max-width: 18ch; font-size: clamp(2rem, 5vw, 3.25rem); line-height: 1.05; }
+.closing .btn { margin-top: 32px; }
 
 /* ---------------------------------------------------------------- footer
- * The page ends on the fade itself: milk easing into blue, with the giant
- * wordmark sitting at the bottom. It stops at a mid-dark blue, not the deep
- * navy, and nothing comes after it.
+ * The page ends on the fade: milk easing into blue (blended in OKLCH so it
+ * stays blue), the one-line credit, then the wordmark. It stops at a mid-dark
+ * blue, not the deep navy.
  */
 .footer {
-  position: relative; overflow: hidden;
-  padding-top: clamp(220px, 26vw, 380px);
+  position: relative; overflow: hidden; padding-top: clamp(140px, 16vw, 240px);
   background: linear-gradient(in oklch 180deg,
-    var(--paper) 0%,
-    oklch(93% 0.014 255) 18%,
-    oklch(84% 0.03 256) 36%,
-    oklch(70% 0.05 258) 54%,
-    oklch(53% 0.062 260) 72%,
-    oklch(38% 0.06 262) 100%);
+    var(--paper) 0%, oklch(93% 0.014 255) 18%, oklch(84% 0.03 256) 36%,
+    oklch(70% 0.05 258) 54%, oklch(53% 0.062 260) 72%, oklch(38% 0.06 262) 100%);
 }
+.foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px; font-size: 13px; color: var(--muted); }
 .giant {
-  display: block; font-weight: 900; letter-spacing: -0.07em; line-height: 0.78; color: var(--orange);
-  font-size: clamp(8rem, 30vw, 30rem); margin: 0 0 -0.12em clamp(12px, 3vw, 40px); user-select: none;
+  display: block; margin: clamp(40px, 6vw, 72px) 0 -0.12em clamp(12px, 3vw, 40px);
+  font-weight: 900; letter-spacing: -0.07em; line-height: 0.78; color: var(--orange);
+  font-size: clamp(8rem, 30vw, 30rem); user-select: none;
 }
 
 @keyframes splat {
@@ -178,20 +152,11 @@ a:focus-visible { outline: 2px solid var(--orange); outline-offset: 3px; border-
 @media (prefers-reduced-motion: reduce) { .hero-splat { animation: none; } html { scroll-behavior: auto; } }
 
 /* ---------------------------------------------------------------- responsive */
-@media (max-width: 960px) {
-  .steps li { grid-template-columns: 56px minmax(0, 1fr); }
-  .steps .card { grid-column: 2; }
-  .numbers { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .numbers > div:nth-child(3) { padding-left: 0; border-left: 0; }
-  .numbers > div:nth-child(n + 3) { border-top: 1px solid var(--line); }
-  .split { grid-template-columns: 1fr; }
-}
-@media (max-width: 640px) {
-  .hero-splat { width: 120vw; right: -55vw; top: auto; bottom: -18vw; translate: 0 0; }
-  .hero-body { justify-content: flex-start; padding-top: 32px; padding-bottom: 46vw; }
-  .steps li { grid-template-columns: 1fr; gap: 14px; padding: 30px 0; }
-  .steps .card { grid-column: 1; }
+@media (max-width: 760px) {
+  .two { grid-template-columns: 1fr; gap: 32px; }
   .numbers { grid-template-columns: 1fr; }
-  .numbers > div, .numbers > div + div { padding-left: 0; border-left: 0; }
-  .numbers > div + div { border-top: 1px solid var(--line); }
+  .numbers > div + div { border-left: 0; border-top: 1px solid var(--line); }
+  .steps li { grid-template-columns: 44px minmax(0, 1fr); gap: 16px; }
+  .hero-splat { width: 110vw; right: -50vw; top: auto; bottom: -22vw; translate: 0 0; }
+  .hero-body { justify-content: flex-start; padding-top: 40px; padding-bottom: 50vw; }
 }
