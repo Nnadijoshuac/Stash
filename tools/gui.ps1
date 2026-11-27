@@ -50,6 +50,22 @@ public static class GuiNative {
   [DllImport("user32.dll")] public static extern bool EnumWindows(EnumProc cb, IntPtr l);
   [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr h);
   [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetWindowText(IntPtr h, System.Text.StringBuilder s, int n);
+  [StructLayout(LayoutKind.Sequential)] public struct RECT { public int L, T, R, B; }
+  [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out RECT r);
+  /** First visible Brave window whose centre lies inside the given screen rectangle. */
+  public static IntPtr FindBraveOn(int x, int y, int w, int hgt) {
+    IntPtr found = IntPtr.Zero;
+    EnumWindows((h, l) => {
+      if (!IsWindowVisible(h)) return true;
+      var sb = new System.Text.StringBuilder(512); GetWindowText(h, sb, 512);
+      if (!sb.ToString().EndsWith(" - Brave")) return true;
+      RECT r; GetWindowRect(h, out r);
+      int cx = (r.L + r.R) / 2, cy = (r.T + r.B) / 2;
+      if (cx >= x && cx < x + w && cy >= y && cy < y + hgt) { found = h; return false; }
+      return true;
+    }, IntPtr.Zero);
+    return found;
+  }
   /** First visible top-level window whose title contains `part`. */
   public static IntPtr FindByTitle(string part, string suffix) {
     IntPtr found = IntPtr.Zero;
@@ -82,7 +98,22 @@ switch ($Action) {
     # the owner's YouTube or anything else in Brave stays where it is
     # (ISSUES #11).
     if (-not $Title) { $Title = 'Stash' }
-    Start-Process 'C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe' -ArgumentList '--new-window', $Url
+    # Prefer a new TAB in a Brave window already on this screen (owner's
+    # request, 27 Nov). Only a window on the chosen screen is used, so a tab
+    # never lands in the owner's window on the other screen. A new window is
+    # opened only when this screen has no Brave window at all.
+    $existing = [GuiNative]::FindBraveOn($b.X, $b.Y, $b.Width, $b.Height)
+    if ($existing -ne [IntPtr]::Zero) {
+      [GuiNative]::keybd_event(0x12, 0, 0, [UIntPtr]::Zero); [GuiNative]::keybd_event(0x12, 0, 2, [UIntPtr]::Zero)
+      [void][GuiNative]::SetForegroundWindow($existing)
+      Start-Sleep -Milliseconds 300
+      [System.Windows.Forms.SendKeys]::SendWait('^t')
+      Start-Sleep -Milliseconds 300
+      $typed = [regex]::Replace($Url, '[+^%~(){}\[\]]', { param($m) '{' + $m.Value + '}' })
+      [System.Windows.Forms.SendKeys]::SendWait($typed + '{ENTER}')
+    } else {
+      Start-Process 'C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe' -ArgumentList '--new-window', $Url
+    }
     $h = [IntPtr]::Zero
     for ($i = 0; $i -lt 40 -and $h -eq [IntPtr]::Zero; $i++) {
       Start-Sleep -Milliseconds 250
