@@ -118,8 +118,16 @@ a:focus-visible { outline: 2px solid var(--orange); outline-offset: 3px; border-
 .n-label { margin-top: 4px; font-size: 14px; color: var(--muted); }
 .fine { margin-top: 20px; font-size: 14px; line-height: 1.6; color: var(--muted); }
 
-/* Closing */
-.closing { text-align: center; }
+/* Closing. Click anywhere in it to throw a splat (landing.js). */
+.closing { position: relative; overflow: hidden; text-align: center; cursor: crosshair; }
+.closing .wrap { position: relative; z-index: 1; }
+.thrown {
+  position: absolute; z-index: 0; width: 96px; height: 96px; margin: -48px 0 0 -48px;
+  pointer-events: none; user-select: none;
+  animation: splat-in 320ms cubic-bezier(.2, 1.4, .4, 1) both, splat-out 1200ms 5s ease-in forwards;
+}
+@keyframes splat-in { from { scale: 0.2; opacity: 0; } to { scale: var(--s, 1); opacity: 1; } }
+@keyframes splat-out { to { opacity: 0; scale: calc(var(--s, 1) * 1.08); } }
 .closing h2 { margin: 0 auto; max-width: 18ch; font-size: clamp(2rem, 5vw, 3.25rem); line-height: 1.05; }
 .closing .btn { margin-top: 32px; }
 
