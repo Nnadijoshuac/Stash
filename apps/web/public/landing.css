@@ -150,32 +150,24 @@ a:focus-visible { outline: 2px solid var(--orange); outline-offset: 3px; border-
 .facts strong { color: var(--ink); }
 
 /* ---------------------------------------------------------------- footer
- * The milk page fades into navy over the footer's first stretch, then the
- * footer sits on solid navy: the colour change is gradual, never a hard cut.
+ * The page ends on the fade itself: milk easing into blue, with the giant
+ * wordmark sitting at the bottom. It stops at a mid-dark blue, not the deep
+ * navy, and nothing comes after it.
  */
 .footer {
-  --fade: clamp(360px, 40vw, 560px);
-  position: relative; overflow: hidden; color: var(--on-navy); background: var(--navy);
-  padding-top: calc(var(--fade) + 24px);
-}
-/* A long, eased fade from milk to navy (blended in OKLCH so it stays blue). */
-.footer::before {
-  content: ""; position: absolute; inset: 0 0 auto; height: var(--fade); pointer-events: none;
+  position: relative; overflow: hidden;
+  padding-top: clamp(220px, 26vw, 380px);
   background: linear-gradient(in oklch 180deg,
     var(--paper) 0%,
-    oklch(94% 0.012 255) 14%,
-    oklch(86% 0.026 256) 28%,
-    oklch(74% 0.045 257) 42%,
-    oklch(58% 0.06 259) 56%,
-    oklch(41% 0.058 261) 70%,
-    oklch(27% 0.042 262) 84%,
-    var(--navy) 100%);
+    oklch(93% 0.014 255) 18%,
+    oklch(84% 0.03 256) 36%,
+    oklch(70% 0.05 258) 54%,
+    oklch(53% 0.062 260) 72%,
+    oklch(38% 0.06 262) 100%);
 }
-.footer-row { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
-.footer-note { color: var(--on-navy-3); font-size: 0.9rem; }
 .giant {
-  font-weight: 900; letter-spacing: -0.07em; line-height: 0.78; color: var(--orange);
-  font-size: clamp(8rem, 30vw, 30rem); margin: 56px 0 -0.12em clamp(12px, 3vw, 40px); user-select: none;
+  display: block; font-weight: 900; letter-spacing: -0.07em; line-height: 0.78; color: var(--orange);
+  font-size: clamp(8rem, 30vw, 30rem); margin: 0 0 -0.12em clamp(12px, 3vw, 40px); user-select: none;
 }
 
 @keyframes splat {
