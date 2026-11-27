@@ -1,0 +1,16 @@
+[toolchain]
+anchor_version = "0.32.1"
+
+[features]
+resolution = true
+skip-lint = false
+
+[programs.localnet]
+stash = "7G66DnGnvPBaAr4hWNhno1ZDeAuh2bvcFmKm5UiZu7oJ"
+
+[programs.devnet]
+stash = "7G66DnGnvPBaAr4hWNhno1ZDeAuh2bvcFmKm5UiZu7oJ"
+
+[provider]
+cluster = "devnet"
+wallet = "keys/deployer.json"

@@ -13,9 +13,10 @@
     "api": "tsx src/e2e-api.ts"
   },
   "dependencies": {
-    "@stash/core": "workspace:*",
     "@solana/web3.js": "^1.95.4",
-    "@stash/fork": "workspace:*"
+    "@stash/core": "workspace:*",
+    "@stash/fork": "workspace:*",
+    "bs58": "^6.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

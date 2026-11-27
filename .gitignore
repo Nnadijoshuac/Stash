@@ -52,3 +52,7 @@ agent/
 
 # built static landing page (tools/build-site.sh)
 /site/
+
+# rust / anchor build output
+/target/
+.anchor/
