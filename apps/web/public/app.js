@@ -390,7 +390,7 @@ $("receive-form").onsubmit = async (ev) => {
     await api("/api/receive", { owner, usdc: toBaseUnits($("receive-amount").value) });
     await refresh();
   } catch (e) { showError(e.message); }
-  finally { btn.disabled = false; btn.textContent = "Receive"; }
+  finally { btn.disabled = false; btn.textContent = "Simulate a payment"; }
 };
 
 $("payments").onclick = async (ev) => {
@@ -418,5 +418,10 @@ $("holdings").onclick = (ev) => {
   try {
     if (wallet.isNew) await api("/api/dev/fund", { owner });
     await refresh();
+    // A restarted fork forgets this wallet's SOL, so top it up for fees.
+    if (state.sol < 50_000_000) {
+      await api("/api/dev/fund", { owner });
+      await refresh();
+    }
   } catch (e) { showError(e.message); }
 })();
