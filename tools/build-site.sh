@@ -9,6 +9,7 @@ find site -mindepth 1 -maxdepth 1 ! -name .vercel -exec rm -rf {} + 2>/dev/null 
 mkdir -p site/brand
 cp apps/web/public/landing.html site/index.html
 cp apps/web/public/landing.css site/
+cp apps/web/public/landing.js site/
 cp apps/web/public/brand/stash-splat-*.png site/brand/
 cat > site/vercel.json <<'JSON'
 {

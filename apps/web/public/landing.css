@@ -32,7 +32,16 @@ a:focus-visible { outline: 2px solid var(--orange); outline-offset: 3px; border-
 .wrap { max-width: 1200px; margin: 0 auto; padding: 0 clamp(20px, 5vw, 64px); }
 
 /* ---------------------------------------------------------------- nav */
-.nav { position: sticky; top: 0; z-index: 50; height: var(--nav-h); background: var(--navy); color: var(--on-navy); }
+.nav {
+  /* Transparent: it floats over whatever is under it. A light blur keeps the
+     words readable; the text colour follows the section below (landing.js). */
+  position: fixed; inset: 0 0 auto; z-index: 50; height: var(--nav-h);
+  background: transparent; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  color: var(--on-navy); transition: color 200ms ease-out;
+}
+.nav.on-light { color: var(--ink); }
+.nav.on-light .nav-source { color: var(--ink-2); }
+.nav.on-light .nav-source:hover { color: var(--ink); }
 .nav-inner {
   height: 100%; max-width: 1200px; margin: 0 auto; padding: 0 clamp(20px, 5vw, 64px);
   display: flex; align-items: center; justify-content: space-between;
@@ -60,7 +69,7 @@ a:focus-visible { outline: 2px solid var(--orange); outline-offset: 3px; border-
 /* ---------------------------------------------------------------- hero */
 .hero {
   position: relative; overflow: hidden; background: var(--navy); color: var(--on-navy);
-  min-height: calc(min(100dvh, 920px) - var(--nav-h)); display: flex; flex-direction: column;
+  min-height: min(100dvh, 920px); padding-top: var(--nav-h); display: flex; flex-direction: column;
 }
 .hero-body {
   position: relative; z-index: 2; flex: 1; display: flex; flex-direction: column; justify-content: center;
@@ -145,11 +154,22 @@ a:focus-visible { outline: 2px solid var(--orange); outline-offset: 3px; border-
  * footer sits on solid navy: the colour change is gradual, never a hard cut.
  */
 .footer {
-  position: relative; overflow: hidden; color: var(--on-navy);
-  padding-top: clamp(220px, 26vw, 340px);
-  background: linear-gradient(180deg, var(--paper) 0%, var(--navy) clamp(200px, 24vw, 320px), var(--navy) 100%);
-  /* Blend in OKLCH so the middle of the fade stays blue instead of going grey. */
-  background: linear-gradient(in oklch 180deg, var(--paper) 0px, oklch(62% 0.07 258) clamp(90px, 10vw, 140px), oklch(30% 0.06 262) clamp(160px, 18vw, 240px), var(--navy) clamp(220px, 26vw, 330px), var(--navy) 100%);
+  --fade: clamp(360px, 40vw, 560px);
+  position: relative; overflow: hidden; color: var(--on-navy); background: var(--navy);
+  padding-top: calc(var(--fade) + 24px);
+}
+/* A long, eased fade from milk to navy (blended in OKLCH so it stays blue). */
+.footer::before {
+  content: ""; position: absolute; inset: 0 0 auto; height: var(--fade); pointer-events: none;
+  background: linear-gradient(in oklch 180deg,
+    var(--paper) 0%,
+    oklch(94% 0.012 255) 14%,
+    oklch(86% 0.026 256) 28%,
+    oklch(74% 0.045 257) 42%,
+    oklch(58% 0.06 259) 56%,
+    oklch(41% 0.058 261) 70%,
+    oklch(27% 0.042 262) 84%,
+    var(--navy) 100%);
 }
 .footer-row { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
 .footer-note { color: var(--on-navy-3); font-size: 0.9rem; }
