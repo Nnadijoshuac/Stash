@@ -49,3 +49,6 @@ HACKATHON.md
 
 # agent working notes: local only, never pushed (owner request, 25 Nov)
 agent/
+
+# built static landing page (tools/build-site.sh)
+/site/

@@ -8,6 +8,8 @@
 </p>
 
 <p align="center">
+  <a href="https://stash-drab-gamma.vercel.app">Live site ↗</a>
+  &nbsp; · &nbsp;
   <a href="#x-running-it">Run it locally</a>
   &nbsp; · &nbsp;
   <a href="#xi-what-is-true-and-what-is-not">What works today</a>
@@ -19,7 +21,7 @@
   <sub>SOLANA &nbsp; / &nbsp; TOKEN-2022 xSTOCKS &nbsp; / &nbsp; JUPITER &nbsp; / &nbsp; WEB3.JS &nbsp; / &nbsp; PLAIN NODE</sub>
 </p>
 
-<p align="center"><sub>Everything below runs on a local Solana mainnet fork with fake balances. Nothing here has spent real money.</sub></p>
+<p align="center"><sub>The live site is the landing page only. The app and everything below run on a local Solana mainnet fork with fake balances. Nothing here has spent real money.</sub></p>
 
 ---
 
