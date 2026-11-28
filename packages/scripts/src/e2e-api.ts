@@ -8,7 +8,9 @@
  * transaction under the same build, the same build twice, and stashing a
  * payment that was already stashed.
  */
-import { Keypair, SystemProgram, TransactionMessage, VersionedTransaction } from "@solana/web3.js";
+import { Connection, Keypair, SystemProgram, TransactionMessage, VersionedTransaction } from "@solana/web3.js";
+import { allocate, buildBasket } from "@stash/core";
+import { SURFNET_RPC_URL, loadOrCreateKeypair } from "@stash/fork";
 
 const API = process.env.STASH_API ?? "http://localhost:4321";
 const SPY = "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W";
@@ -42,7 +44,10 @@ function sign(base64: string): string {
 console.log(`Client wallet (key never leaves this process): ${owner}`);
 await ok("/api/dev/fund", { owner });
 await ok("/api/eligibility", { owner, confirm: true });
-await ok("/api/rule", { owner, stashBps: 2000, basket: [{ mint: SPY, weightBps: 6000 }, { mint: NVDA, weightBps: 4000 }] });
+// The rule lives on chain, so it's a transaction this wallet signs.
+const ruleBuild = await ok("/api/rule/build", { owner, stashBps: 2000, basket: [{ mint: SPY, weightBps: 6000 }, { mint: NVDA, weightBps: 4000 }] });
+const ruleTx = await ok("/api/submit", { buildId: ruleBuild.buildId, signedTransaction: sign(ruleBuild.transaction) });
+console.log(`Rule saved on chain: ${ruleTx.signature.slice(0, 16)}…`);
 
 const paid = await ok("/api/receive", { owner, usdc: "500000000" });
 console.log(`Paid $500: ${paid.signature.slice(0, 16)}…`);
@@ -83,6 +88,21 @@ console.log(`Stashed $${Number(stash.stashUsdc) / 1e6} of $500 (spent $${Number(
 
 // Cheat 3: stash the same payment again.
 await refused("stashing an already-stashed payment", "/api/stash/build", { owner, paymentSignature: payment.signature }, /already stashed/);
+
+// Cheat 4: skip the server and send a second stash of the same payment
+// straight to the chain. The program's receipt for this payment already
+// exists, so Solana itself has to refuse it.
+{
+  const connection = new Connection(SURFNET_RPC_URL, "confirmed");
+  const allocation = allocate(BigInt(payment.amountUsdc), { stashBps: 2000, basket: [{ mint: SPY, weightBps: 6000 }, { mint: NVDA, weightBps: 4000 }] });
+  const treasury = loadOrCreateKeypair("treasury").publicKey.toBase58();
+  const built = await buildBasket({ connection, owner, treasury, allocation, paymentSignature: payment.signature });
+  built.transaction.sign([wallet]);
+  const sim = await connection.simulateTransaction(built.transaction, { sigVerify: true });
+  const pass = sim.value.err !== null;
+  if (!pass) failures++;
+  console.log(`  ${pass ? "refused on chain" : "NOT REFUSED"}: a second stash of the same payment sent directly to Solana -> ${JSON.stringify(sim.value.err)}`);
+}
 
 // Sell half the Nvidia we just bought.
 let sale: any;
