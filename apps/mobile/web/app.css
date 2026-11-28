@@ -1,0 +1,54 @@
+/* Same palette and type as the landing page. */
+:root {
+  --navy: oklch(15% 0.022 262);
+  --paper: oklch(97.6% 0.006 255);
+  --ink: #0b0d12;
+  --muted: #5b6472;
+  --line: #e2e6ee;
+  --on-navy: oklch(97% 0.004 262);
+  --on-navy-2: oklch(76% 0.018 262);
+  --orange: #ff5a1f;
+  --orange-press: #e84c14;
+  --good: #1b6b30;
+  --bad: #b3261e;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: Inter, system-ui, sans-serif; background: var(--paper); color: var(--ink); line-height: 1.5; }
+a { color: inherit; }
+.wrap { max-width: 720px; margin: 0 auto; padding: 0 20px; }
+
+.top { background: var(--navy); color: var(--on-navy); padding: 28px 0 40px; }
+.top .brand { display: inline-flex; gap: 8px; align-items: center; font-weight: 600; text-decoration: none; }
+.top h1 { font-size: clamp(30px, 6vw, 44px); line-height: 1.05; letter-spacing: -0.03em; font-weight: 800; margin: 36px 0 14px; }
+.top p { color: var(--on-navy-2); max-width: 56ch; margin: 0; }
+
+section { padding: 32px 0 8px; }
+section.last { padding-bottom: 64px; }
+h2 { font-size: 20px; letter-spacing: -0.01em; margin: 0 0 12px; }
+section > p { margin: 14px 0 8px; }
+.note { color: var(--muted); font-size: 14px; }
+.meta { color: var(--muted); font-size: 13px; display: block; }
+
+.buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+button { font: inherit; border: 0; cursor: pointer; }
+button:disabled { opacity: 0.6; cursor: progress; }
+.primary { background: var(--orange); color: #fff; font-weight: 600; padding: 12px 18px; border-radius: 10px; margin-top: 10px; }
+.primary:hover { background: var(--orange-press); }
+.primary.small { padding: 8px 14px; margin: 0; }
+.secondary { background: #e9edf3; color: var(--ink); font-weight: 500; padding: 10px 16px; border-radius: 10px; }
+.chip { background: #e9edf3; color: var(--ink); padding: 8px 14px; border-radius: 999px; font-weight: 500; }
+.chip.on { background: var(--navy); color: var(--on-navy); }
+.link { background: none; color: var(--orange); font-weight: 500; padding: 4px 0; display: block; }
+
+.figures { display: flex; flex-wrap: wrap; gap: 36px; }
+.figures strong { font-size: 30px; letter-spacing: -0.02em; display: block; }
+.figures strong.small { font-size: 20px; padding-top: 8px; }
+#message { min-height: 1.5em; font-size: 14px; margin: 16px 0 0; }
+#message.ok { color: var(--good); }
+#message.bad { color: var(--bad); }
+#message a { color: var(--orange); margin-left: 6px; }
+
+.row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.row strong { font-size: 17px; }
+.row .meta { text-decoration: none; }
+.done { color: var(--good); font-size: 14px; font-weight: 500; }

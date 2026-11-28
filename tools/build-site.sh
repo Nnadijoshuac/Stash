@@ -1,6 +1,7 @@
 #!/bin/bash
-# Copies the landing page into site/ for Vercel. The app needs the local fork,
-# so on the live site /app sends people to the README's setup steps.
+# Builds site/ for Vercel: the landing page at /, the devnet app at /app and
+# the test payer at /api/pay. The full app with stock swaps needs the local
+# mainnet fork, so it isn't hosted; the README has the setup steps.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 # Keep site/.vercel, which links this folder to the Vercel project.
@@ -10,11 +11,5 @@ cp apps/web/public/landing.html site/index.html
 cp apps/web/public/landing.css site/
 cp apps/web/public/landing.js site/
 cp apps/web/public/brand/stash-splat-*.png site/brand/
-cat > site/vercel.json <<'JSON'
-{
-  "redirects": [
-    { "source": "/app", "destination": "https://github.com/Nnadijoshuac/Stash#x-running-it", "permanent": false }
-  ]
-}
-JSON
+node tools/build-demo.mjs
 echo "site/ ready: $(ls site | tr '\n' ' ')"

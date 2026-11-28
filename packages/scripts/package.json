@@ -10,7 +10,8 @@
     "stash": "tsx src/e2e-stash.ts",
     "payment": "tsx src/e2e-payment.ts",
     "sell": "tsx src/e2e-sell.ts",
-    "api": "tsx src/e2e-api.ts"
+    "api": "tsx src/e2e-api.ts",
+    "devnet": "tsx src/e2e-devnet.ts"
   },
   "dependencies": {
     "@solana/web3.js": "^1.95.4",
