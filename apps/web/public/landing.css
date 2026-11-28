@@ -121,9 +121,10 @@ a:focus-visible { outline: 2px solid var(--orange); outline-offset: 3px; border-
 .n-label { margin-top: 4px; font-size: 14px; color: var(--muted); }
 .fine { margin-top: 20px; font-size: 14px; line-height: 1.6; color: var(--muted); }
 
-/* Closing. Click anywhere in it to throw a splat (landing.js). */
-.closing { position: relative; overflow: hidden; text-align: center; }
-.closing .wrap { position: relative; z-index: 1; }
+/* Closing and footer. Tap anywhere in them to throw a splat (landing.js). */
+.splat-zone { position: relative; overflow: hidden; }
+.closing { text-align: center; }
+.closing .wrap, .foot, .giant { position: relative; z-index: 1; }
 .thrown {
   position: absolute; z-index: 0; width: 96px; height: 96px; margin: -48px 0 0 -48px;
   pointer-events: none; user-select: none;

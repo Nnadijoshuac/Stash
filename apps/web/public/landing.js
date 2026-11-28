@@ -15,7 +15,7 @@
   update();
 })();
 
-// The logo is a splat, so the closing section lets you throw some. Each one
+// The logo is a splat, so from the closing section down you can throw some. Each one
 // lands where you click, a bit rotated and sized at random, then fades.
 (() => {
   const area = document.querySelector("[data-splat]");

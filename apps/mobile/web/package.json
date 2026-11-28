@@ -1,0 +1,9 @@
+{
+  "name": "@stash/devnet-web",
+  "private": true,
+  "description": "The devnet web app at /app. Bundled by tools/build-demo.mjs; its wallet modal is Reown AppKit.",
+  "dependencies": {
+    "@reown/appkit": "2.0.0",
+    "@reown/appkit-adapter-solana": "2.0.0"
+  }
+}

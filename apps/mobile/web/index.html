@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Stash on devnet</title>
-  <meta name="description" content="Try Stash with your own wallet on Solana devnet: save a rule, get paid, stash the slice.">
+  <title>Stash</title>
+  <meta name="description" content="Stash on Solana devnet: set a rule, get paid, stash the slice.">
   <link rel="icon" type="image/png" href="/brand/stash-splat-64.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,58 +12,50 @@
   <link rel="stylesheet" href="/app/app.css">
 </head>
 <body>
-  <header class="top">
-    <div class="wrap">
-      <a class="brand" href="/"><img src="/brand/stash-splat-64.png" alt="" width="22" height="22"><span>Stash</span></a>
-      <h1>Invest a slice of every payment</h1>
-      <p>This is the real program on Solana devnet, signed by your own wallet. Devnet has no tokenized stocks, so here the slice moves into a USDC account only your wallet controls, and the program writes a receipt. The stock swaps run against a mainnet fork; see the <a href="https://github.com/Nnadijoshuac/Stash">source</a>.</p>
-    </div>
-  </header>
+  <nav class="nav">
+    <a class="brand" href="/"><img src="/brand/stash-splat-64.png" alt="" width="22" height="22"><span>Stash</span></a>
+    <span class="nav-right">
+      <span class="pill" id="network">Devnet</span>
+      <button id="account" class="pill account" hidden></button>
+    </span>
+  </nav>
 
-  <main class="wrap">
-    <section id="connect">
-      <h2>1. Connect</h2>
-      <p class="note">Use Phantom, Solflare or Backpack set to devnet. A fresh test wallet is best.</p>
-      <div id="wallets" class="buttons"></div>
+  <main id="welcome" class="welcome">
+    <img class="splat" src="/brand/stash-splat-master.png" alt="">
+    <h1>Invest a slice<span class="soft">of every payment</span></h1>
+    <button id="connect" class="primary big">Connect wallet</button>
+    <p class="fine">Solana devnet. Test money only.</p>
+  </main>
+
+  <main id="app" class="app" hidden>
+    <section class="totals">
+      <div><p class="label">Stashed</p><p class="big-n" id="saved">$0.00</p></div>
+      <div><p class="label">Wallet</p><p class="mid-n" id="usdc">$0.00</p></div>
     </section>
 
-    <div id="connected" hidden>
-      <section>
-        <div class="figures">
-          <div><span class="meta">Wallet <span id="address"></span></span><strong id="usdc">…</strong><span class="meta">USDC</span></div>
-          <div><span class="meta">Stashed</span><strong id="saved">…</strong><span class="meta">USDC</span></div>
-          <div><span class="meta">Fees</span><strong id="sol" class="small">…</strong></div>
-        </div>
-        <p id="message" class="ok"></p>
-      </section>
+    <section>
+      <p class="label">Your rule</p>
+      <p class="rule">Stash <span id="shares" class="chips"></span></p>
+      <p class="rule">into <span id="stocks" class="chips"></span></p>
+      <button id="save" class="primary" hidden>Save rule</button>
+    </section>
 
-      <section>
-        <h2>2. Your rule</h2>
-        <p>Stash this much of every payment</p>
-        <div id="shares" class="buttons"></div>
-        <p>Into one or two of these</p>
-        <div id="stocks" class="buttons"></div>
-        <p class="note" id="rule-state"></p>
-        <button id="save" class="primary">Save rule on chain</button>
-      </section>
+    <section>
+      <div class="head">
+        <p class="label">Payments</p>
+        <button id="pay" class="text">Get a $2 test payment</button>
+      </div>
+      <div id="payments"></div>
+      <button id="withdraw" class="text" hidden></button>
+    </section>
 
-      <section>
-        <h2>3. Get paid, then stash</h2>
-        <div class="buttons">
-          <button id="pay" class="secondary">Send me a test payment</button>
-          <button id="refresh" class="secondary">Refresh</button>
-        </div>
-        <p class="note">A test client sends $2 of Circle's devnet USDC, and a little SOL for fees if you need it. You can also use <a href="https://faucet.circle.com" target="_blank" rel="noopener">faucet.circle.com</a>.</p>
-        <div id="payments"></div>
-      </section>
-
-      <section class="last">
-        <button id="withdraw" class="link" hidden></button>
-        <button id="disconnect" class="link">Disconnect</button>
-        <p class="note">Program <a href="https://explorer.solana.com/address/7G66DnGnvPBaAr4hWNhno1ZDeAuh2bvcFmKm5UiZu7oJ?cluster=devnet" target="_blank" rel="noopener">7G66…u7oJ</a> on devnet. Also on Android: <a href="/stash.apk">download the APK</a>.</p>
-      </section>
-    </div>
+    <p id="message" role="status"></p>
   </main>
-  <script src="/app/app.js"></script>
+
+  <footer class="foot">
+    <a href="https://github.com/Nnadijoshuac/Stash">Source</a>
+    <a href="/stash.apk">Android app</a>
+  </footer>
+  <script type="module" src="/app/app.js"></script>
 </body>
 </html>

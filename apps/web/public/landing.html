@@ -15,7 +15,7 @@
   <nav class="nav">
     <div class="nav-inner">
       <a class="brand" href="#top"><img src="/brand/stash-splat-64.png" alt="" width="22" height="22"><span>Stash</span></a>
-      <span class="nav-links"><a class="nav-link" href="/app">Try it</a><a class="nav-link" href="https://github.com/Nnadijoshuac/Stash">Source</a></span>
+      <span class="nav-links"><a class="nav-link" href="https://github.com/Nnadijoshuac/Stash">Source</a></span>
     </div>
   </nav>
 
@@ -113,14 +113,17 @@
       </div>
     </section>
 
-    <section class="section closing" data-splat>
+  </main>
+
+  <!-- From here to the bottom of the page, every tap throws a splat (landing.js). -->
+  <div class="splat-zone" data-splat>
+    <section class="section closing">
       <div class="wrap">
         <h2>Start with<span class="soft">your next payment</span></h2>
         <a class="btn btn-orange" href="/app">Try it on devnet</a>
         <a class="btn btn-ink" href="https://github.com/Nnadijoshuac/Stash">Read the source</a>
       </div>
     </section>
-  </main>
 
   <!-- The page ends on the fade, with the wordmark at the bottom. -->
   <footer class="footer">
@@ -130,6 +133,7 @@
     </div>
     <div class="giant" aria-hidden="true">Stash</div>
   </footer>
+  </div>
   <script src="/landing.js" defer></script>
 </body>
 </html>
