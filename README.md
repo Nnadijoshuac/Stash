@@ -3,375 +3,358 @@
 <h1 align="center">Stash</h1>
 
 <p align="center">
-  <strong>Get paid in dollars. Keep some of it in stocks.</strong><br>
-  Set a rule once. Every payment you receive buys your basket, in one transaction, any day of the week.
+  <strong>Invest a slice of every payment.</strong><br>
+  Set a rule once. When money lands in your wallet, one tap puts a slice of it into stocks, in one transaction.
 </p>
 
 <p align="center">
-  <a href="https://stash-drab-gamma.vercel.app">Live site ↗</a>
+  <a href="https://stash-drab-gamma.vercel.app/app">Try it on devnet ↗</a>
   &nbsp; · &nbsp;
-  <a href="#x-running-it">Run it locally</a>
+  <a href="https://stash-drab-gamma.vercel.app/stash.apk">Android APK ↗</a>
   &nbsp; · &nbsp;
-  <a href="#xi-what-is-true-and-what-is-not">What works today</a>
+  <a href="#10-run-locally">Run it locally</a>
+  &nbsp; · &nbsp;
+  <a href="#11-what-works-today">What works today</a>
   &nbsp; · &nbsp;
   <a href="https://hack.dev3pack.xyz">Dev3pack Global Hackathon ↗</a>
 </p>
 
 <p align="center">
-  <sub>SOLANA &nbsp; / &nbsp; TOKEN-2022 xSTOCKS &nbsp; / &nbsp; JUPITER &nbsp; / &nbsp; WEB3.JS &nbsp; / &nbsp; PLAIN NODE</sub>
+  <sub>SOLANA &nbsp; / &nbsp; ANCHOR &nbsp; / &nbsp; TOKEN-2022 xSTOCKS &nbsp; / &nbsp; JUPITER &nbsp; / &nbsp; MOBILE WALLET ADAPTER &nbsp; / &nbsp; EXPO</sub>
 </p>
 
-<p align="center"><sub>The live site is the landing page only. The app and everything below run on a local Solana mainnet fork with fake balances. Nothing here has spent real money.</sub></p>
+<p align="center"><sub>Program <code>7G66DnGnvPBaAr4hWNhno1ZDeAuh2bvcFmKm5UiZu7oJ</code> is deployed on devnet. The live app and the Android app run against it. The stock swaps need real xStock pools, which only exist on mainnet, so that part runs on a local mainnet fork with fake balances. Nothing here has spent real money.</sub></p>
 
 ---
 
-**One payment, three stocks, one transaction.**
+**Every stock in your basket fills or none does, and Solana itself refuses to stash the same payment twice.**
 
-| Basket | Size | Accounts | Compute units |
-| :--- | :---: | :---: | :---: |
-| 60% S&P 500, 40% Nvidia | 843 to 874 / 1,232 bytes | 35 / 64 | 136,331 to 197,578 |
-| 50% S&P 500, 30% Nvidia, 20% Tesla | 1,118 / 1,232 bytes | 47 / 64 | 224,000 to 266,000 |
-
-<sub>Measured on surfpool 1.5.0 forking Solana mainnet, 25 to 27 November 2026. Real Jupiter routes, real pools, real xStock mints; fake USDC and SOL.</sub>
-
-> **The stock market should be where your money goes by default, not a place you apply to.**
->
-> Most people paid in dollars outside the US cannot easily own a share of the S&P 500. The obstacles
-> are paperwork, a funding delay measured in days, and a market that closes on Friday afternoon.
-> Tokenized equities on Solana remove all three. What is missing is the habit.
-
-| What has been observed on chain | Where the boundary is |
+| What the program enforces | Checked on devnet (28 Nov) |
 | :--- | :--- |
-| A payment arriving, found by reading the chain, then 20% of it stashed into stocks | On a local **mainnet fork** with fake balances, not on mainnet. |
-| A two- and a three-stock basket landing in **one** transaction (843 and 1,118 of 1,232 bytes) | Three stocks is the ceiling; a fourth does not fit. |
-| The user's wallet signing in the browser; the server never holds the key | On the fork the wallet is a test keypair kept in the browser, not Phantom. |
-| The server refusing a different transaction than it built, a replay, and a double stash | Build state lives in memory; a server restart means "build again". |
-| Exactly the allocated amount leaving the wallet, and Stash's 0.5% fee arriving in the treasury | The user pays network fees in SOL; nothing sponsors them yet. |
-| Selling part of a stock back to USDC, fee included | Eligibility is a confirmation the user ticks, not a verified check. |
+| A rule can only name verified xStocks, one or two of them, adding up to 100% | `UnverifiedStock` (6002) on a random mint |
+| The stashed amount is exactly the rule's share of the payment, rounded down | `AmountBreaksRule` (6006) on $150 of $500 at 20% |
+| One receipt per payment, so a payment can be stashed once | second stash fails: receipt address "already in use" |
+| The receipt is written in the same transaction as the swaps | if a swap fails, there's no receipt and nothing moves |
+
+<sub>Run it yourself: <code>pnpm devnet</code>. Signatures are in <a href="#11-what-works-today">What works today</a>.</sub>
+
+> **Investing should happen when money arrives, not when you remember.**
+>
+> A salary can invest for you before you see it. Freelancers, creators and anyone paid in lumps
+> don't get that: the money lands, bills come first, and investing moves to next month. Tokenized
+> stocks on Solana can be bought from a wallet, any day, in amounts as small as a dollar. What's
+> missing is the habit, and a guarantee that the habit can't go wrong.
+
+| What has been observed | Where the boundary is |
+| :--- | :--- |
+| The Stash program on devnet: rules saved, stashes recorded, double stashes and wrong amounts refused | Devnet has no xStocks, so on devnet the slice goes to a USDC account the wallet owns instead of into stocks |
+| A two-stock basket bought with real Jupiter routes, plus the receipt, in one transaction of 1,002 / 1,232 bytes | On a local mainnet fork with fake balances, not on mainnet |
+| The Android app connecting and signing through Mobile Wallet Adapter | Payments are checked every 15 seconds while the app is open; there's no push server yet |
+| The wallet signs every transaction; the server never holds a key | You still tap once per payment. Stashing with no tap needs a limited session key, which isn't built |
 
 <details>
 <summary><strong>Contents</strong></summary>
 
 | | Chapter | |
 | :--- | :--- | :--- |
-| 01 | [The gap](#i-the-problem) | Why dollars sit idle |
-| 02 | [The promise](#ii-the-one-idea) | One rule, one tap, one transaction |
-| 03 | [Architecture](#iii-the-shape) | Where truth lives |
-| 04 | [The life of a stash](#iv-the-life-of-a-stash) | Detect, quote, build, sign, verify |
-| 05 | [Edge cases](#v-edges) | Who can hold xStocks, and who can freeze them |
-| 06 | [Getting out](#vi-getting-out) | Selling back to dollars |
-| 07 | [Risk and economics](#vii-risk) | What it costs, and what it earns |
-| 08 | [Engineering decisions](#viii-the-decisions) | Twelve problems and their fixes |
-| 09 | [Repository map](#ix-the-map) | Where the moving parts live |
-| 10 | [Run locally](#x-running-it) | Steps and troubleshooting |
-| 11 | [What works today](#xi-what-is-true-and-what-is-not) | Observed, unobserved, absent |
+| 01 | [The gap](#01-the-gap) | Who it's for and why existing options fail |
+| 02 | [The promise](#02-the-promise) | One rule, one tap, one transaction |
+| 03 | [Architecture](#03-architecture) | Where truth lives |
+| 04 | [The program](#04-the-program) | What runs on chain and what it refuses |
+| 05 | [The life of a stash](#05-the-life-of-a-stash) | Detect, quote, build, sign, verify |
+| 06 | [On your phone](#06-on-your-phone) | The Android app and the devnet web app |
+| 07 | [Risks you inherit](#07-risks-you-inherit) | Who can hold xStocks, and who can freeze them |
+| 08 | [Money](#08-money) | What it costs, what it earns, what's next |
+| 09 | [Engineering decisions](#09-engineering-decisions) | Problems hit while building, and the fixes |
+| 10 | [Run locally](#10-run-locally) | Steps and troubleshooting |
+| 11 | [What works today](#11-what-works-today) | Observed, not observed, absent |
 
 </details>
 
 ---
 
-<a id="i-the-problem"></a>
-
 ## 01 · The gap
 
-You just got paid $500 in USDC for a job. You want $100 of it to grow.
-
-The usual options and what is wrong with each:
+**Who it's for.** People paid in stablecoins in uneven lumps: freelancers, creators, contractors.
+A designer in Lagos paid $500 in USDC by a client abroad is a good example. She wants $100 of it
+in the S&P 500. Her choices today:
 
 | Option | What gets in the way |
 | :--- | :--- |
-| An international brokerage app | Identity checks, funding by bank wire or card, days before the money arrives, and trading only when New York is open |
-| Leaving it in USDC | Safe, and it does not grow |
-| Buying a token on a DEX by hand | One stock at a time, a different screen for each, and nothing that repeats |
+| A brokerage app | Identity checks, funding by wire or card, days before the money arrives, trading only when New York is open. From many countries, not available at all |
+| Keep it in USDC | Safe, and it doesn't grow |
+| Buy a tokenized stock on a DEX by hand | One stock at a time, a new screen each time, and nothing that repeats |
 
-The author's own version: second place at Stocklana paid $20,000 in USDC. Keeping part of it in an
-index fund meant choosing between paperwork and doing it by hand every time. Stash is the version
-that does it automatically.
-
-<a id="ii-the-one-idea"></a>
+The last option is close. The pieces exist: xStocks track the S&P 500, Nvidia and others; Jupiter
+routes USDC into them; wallets hold them. Nobody had tied them to the moment money arrives.
 
 ## 02 · The promise
 
 **Set a rule once. Each payment you receive buys your basket in one transaction.**
 
-- **A rule, not a trade.** "20% of everything I receive: 60% S&P 500, 40% Nvidia." You decide once.
-- **One tap per payment.** The whole basket fills in one transaction or not at all. You never end up holding half a basket.
-- **Any day, any size.** xStocks trade 24/7, and the network fee for a stash is 5,500 lamports.
+- **A rule, not a trade.** "20% of everything I receive: 60% S&P 500, 40% Nvidia." It lives on chain, and only your wallet can change it.
+- **One tap per payment.** The whole basket fills in one transaction or not at all. You never hold half a basket, and the same payment can't be stashed twice.
+- **Any day, any size.** xStocks trade around the clock, and the network fee for a stash is 5,500 lamports.
 
-<a id="iii-the-shape"></a>
+**Why Solana.** A whole basket, routed through Jupiter, plus the program's receipt, fits in one
+atomic transaction (1,002 of 1,232 bytes for two stocks). That's what makes "all or nothing"
+true. It costs a fraction of a cent, and it works on a Sunday.
 
 ## 03 · Architecture
 
 | Surface | What it is |
 | :--- | :--- |
-| `apps/web` landing (`/`) | What Stash is, how it works, the measured numbers, what is real |
-| `apps/web` app (`/app`) | Dashboard: payments, rule, holdings, stash and sell drawers, activity |
-| `apps/web` server | Plain Node `http`. Reads the chain, builds unsigned transactions, verifies and sends signed ones |
-| `packages/core` | All domain and chain logic: allowlist, allocation, Jupiter, basket packing, payments, sell, verify |
-| `packages/fork` | Fork-only helpers: cheatcodes, clock sync, route refresh, the test payer |
+| `programs/stash` | Anchor program: the rule and a receipt per stashed payment |
+| `apps/web` | Landing page, the full app (`/app` locally), and a plain Node server that builds unsigned transactions and verifies signed ones |
+| `apps/mobile` | Android app (Expo, Mobile Wallet Adapter) on devnet. Its `web/` folder is the same client in a browser, served at `/app` on the live site |
+| `packages/core` | Domain and chain logic: allowlist, allocation, Jupiter, basket packing, payments, sell, verify, program client |
+| `packages/fork` | Fork-only helpers: cheatcodes, clock sync, route refresh |
 | `packages/scripts` | Funding and end-to-end scripts that print signatures |
 
-**Where truth lives.** Balances, holdings and payments are read from the chain every time; the
-server never stores an amount it could read. The server stores only what the chain cannot hold:
-each wallet's rule, its eligibility confirmation, and which payment signatures it has already stashed
-(`.stash/users/<wallet>.json`). The private key never leaves the browser.
+**Where truth lives.** On chain: the rule (`["rule", owner]`), one receipt per stashed payment
+(`["stash", owner, payment id]`), balances, holdings, payments. The server keeps nothing it could
+read from the chain except a 90-second memory of the transactions it built, and an eligibility tick
+per wallet. The private key never leaves the wallet.
 
 ```mermaid
 flowchart LR
-  B["Browser<br/>wallet key stays here"] -- "build: payment signature" --> S["Stash server<br/>quotes, packs, remembers message"]
-  S -- "Jupiter quote + swap-instructions" --> J["Jupiter API"]
-  S -- "unsigned v0 transaction" --> B
-  B -- "signed transaction" --> S
-  S -- "verify, simulate, send" --> F["Solana<br/>(mainnet fork)"]
-  F -- "balances, payments" --> S
-  style B fill:#FFFFFF,stroke:#0B1220,color:#0B1220
+  W["Wallet<br/>signs everything"] -- "build: payment signature" --> S["Stash server<br/>quotes, packs, remembers bytes"]
+  S -- "quote + swap instructions" --> J["Jupiter"]
+  S -- "unsigned transaction" --> W
+  W -- "signed transaction" --> S
+  S -- "verify, simulate, send" --> C["Solana"]
+  C -- "Stash program: rule + receipt" --> C
+  style W fill:#FFFFFF,stroke:#0B1220,color:#0B1220
   style S fill:#FF5A1F,stroke:#FF5A1F,color:#FFFFFF
   style J fill:#FFFFFF,stroke:#0B1220,color:#0B1220
-  style F fill:#0B1220,stroke:#0B1220,color:#FFFFFF
+  style C fill:#0B1220,stroke:#0B1220,color:#FFFFFF
 ```
 
-<a id="iv-the-life-of-a-stash"></a>
+## 04 · The program
 
-## 04 · The life of a stash
+`programs/stash/src/lib.rs`, Anchor 0.32.1, 227 lines. Devnet address
+[`7G66DnGnvPBaAr4hWNhno1ZDeAuh2bvcFmKm5UiZu7oJ`](https://explorer.solana.com/address/7G66DnGnvPBaAr4hWNhno1ZDeAuh2bvcFmKm5UiZu7oJ?cluster=devnet).
+
+| Instruction | Accounts | What it checks |
+| :--- | :--- | :--- |
+| `set_rule(stash_bps, basket)` | owner (signer), rule PDA `["rule", owner]` | 1 to 10,000 bps; one or two stocks; each one of five verified xStock mints; no duplicates; weights above zero and summing to 10,000 |
+| `record_stash(payment_id, payment_usdc, stash_usdc)` | owner (signer), rule PDA, receipt PDA `["stash", owner, payment_id]` | the rule exists and belongs to the signer; `stash_usdc == floor(payment_usdc × stash_bps / 10,000)`; the receipt is `init`, so a second one for the same payment fails |
+
+The payment id is the first 32 bytes of the payment's transaction signature. The program doesn't
+read the payment itself; the client finds it on chain and the program checks the arithmetic. It
+emits a `Stashed` event with the amounts.
+
+Errors, as a user would read them:
+
+| Code | Message |
+| :---: | :--- |
+| 6000 | Choose how much of each payment to stash: more than 0% and at most 100%. |
+| 6001 | A basket holds one or two stocks, so it fits in one transaction. |
+| 6002 | Only verified xStocks can be stashed into. |
+| 6003 | Every stock in the basket needs a share above 0%. |
+| 6004 | Each stock can appear in the basket only once. |
+| 6005 | The basket's shares must add up to 100%. |
+| 6006 | The stashed amount is not what the rule says for this payment. |
+
+Tests: 3 Rust unit tests on the rule checks and rounding (`cargo test`), 6 TypeScript tests on the
+instruction encoding (`packages/core/src/program.test.ts`, including one that pins the
+discriminators the Android app writes by hand), and `pnpm devnet` against the deployed program.
+
+## 05 · The life of a stash
 
 | Stage | What happens |
 | :--- | :--- |
-| Rule | The user picks a percentage and up to three stocks adding up to 100%. Stored per wallet. |
-| Detect | A USDC payment arrives. Stash finds it by reading the chain: the owner did not sign it, it succeeded, and the owner's USDC went up. The amount is never typed in. |
-| Allocate | Payment × rule → one leg per stock, in integer base units. The leftover cent goes to the heaviest leg, so legs always sum to the exact amount. |
+| Rule | The wallet signs `set_rule`. The app reads it back from chain; there's no other copy. |
+| Detect | A USDC payment arrives. It counts if it succeeded, the wallet's USDC went up, and the wallet didn't sign it. The amount comes from the chain, never from a form. |
+| Allocate | Payment × rule → one leg per stock, in base units. The leftover unit goes to the heaviest leg, so legs sum exactly. |
 | Quote | The server quotes each leg through Jupiter with a 0.5% platform fee. The client never names a price or a mint. |
-| Build | All legs go into one v0 transaction with Jupiter's lookup tables, a 500,000 compute-unit limit and a 1,000 micro-lamport priority fee. |
-| Sign | The server returns it unsigned and remembers the exact message bytes for 90 seconds. The browser wallet signs. |
-| Verify | `/api/submit` checks the signed message is byte-for-byte the one it built and the owner's ed25519 signature, then simulates. A changed, replayed or second stash of the same payment is refused. |
-| Land | Either every stock in the basket arrives, or nothing moves. |
+| Build | Swap legs plus `record_stash` go into one v0 transaction with Jupiter's lookup tables. |
+| Sign | The server returns it unsigned and remembers the exact message bytes for 90 seconds. The wallet signs. |
+| Verify | The server checks the signed message is byte for byte the one it built and that the owner signed it, then simulates and sends. |
+| Land | Every stock arrives and the receipt is written, or nothing happens. |
 
 ```mermaid
 sequenceDiagram
-  participant W as Browser wallet
+  participant W as Wallet
   participant S as Stash server
   participant J as Jupiter
   participant C as Solana
-  W->>S: build stash for payment 2iSo…
-  S->>C: read payment (amount from chain)
-  S->>J: quote + swap-instructions per leg
-  S-->>W: unsigned transaction (message remembered 90s)
+  W->>S: build a stash for payment 2iSo…
+  S->>C: read the payment (amount from chain)
+  S->>J: quote + swap instructions per leg
+  S-->>W: unsigned transaction (bytes remembered 90s)
   W->>S: signed transaction
-  S->>S: same bytes? owner signature? not stashed before?
+  S->>S: same bytes? owner's signature?
   S->>C: simulate, then send
-  C-->>S: confirmed: every leg or none
-  S-->>W: stashed, with signature and compute units
+  C-->>S: every leg and the receipt, or nothing
 ```
 
 <details>
-<summary>Why three stocks is the ceiling</summary>
+<summary>Why two stocks is the limit</summary>
 
-A Solana transaction is at most 1,232 bytes and 64 accounts. Each Jupiter leg brings its pool
-accounts; lookup tables shrink them to one byte each. Measured: two legs take 843 to 874 bytes and 35
-accounts, three take 1,118 bytes and 47. A fourth leg does not fit, so the rule form allows three.
-If a route ever comes out too large, packing fails with "This basket is over 1232 bytes, the most a
-transaction allows. Try fewer stocks." and nothing is signed.
+A transaction is at most 1,232 bytes and 64 accounts. Each Jupiter leg brings its pool accounts;
+lookup tables shrink them to one byte each. Measured on the fork on 27 November: two legs take
+843 bytes, and 1,002 with the receipt. Three legs without the receipt came to 1,095, 1,117, 1,159
+and once 1,261 bytes, so three legs plus the receipt never fit. The program, the server and both
+apps cap the basket at two. An earlier version of this README advertised three; that was before
+the receipt existed.
 
 </details>
 
-<a id="v-edges"></a>
+<details>
+<summary>Selling back to USDC</summary>
 
-## 05 · Edge cases
+Sell 25%, 50% or all of a position: one route, one transaction, signed by the wallet, with the 0.5%
+fee taken in USDC. Observed on the fork: 50% of NVDAx for $19.79 and 25% of SPYx for $14.85.
 
-- **Who can hold xStocks.** Not everyone. Kraken's
-  [xStocks FAQ](https://support.kraken.com/articles/xstocks-faq) says they are not accessible in
-  the US or to US persons, Canada, the UK or Australia, and holding them in a self-custody wallet
-  does not change that. Stash asks you to confirm before your first stash, not after.
-- **xStocks are not Solana-only.** They are also issued on Ethereum, TON and Ink. An earlier draft
-  of this README implied otherwise. What Stash depends on Solana for is narrower and measurable: a
-  whole basket, routed by Jupiter, filled in one atomic transaction for 5,500 lamports, on a Sunday
-  as easily as a Tuesday.
-- **Who can freeze, pause or move them.** Read from the SPYx mint (`XsoCS1Tf…DF2W`): it has a
-  freeze authority, a mint authority, a **permanent delegate**, a **pausable** config, a transfer
-  hook and a default account state. The issuer can freeze or pause the token and move it out of any
-  account. Stash inherits that risk and cannot remove it.
-- **Look-alike tokens.** A Jupiter search for `NVDAx` returns the real mint and impostors such as
-  "NVIDA xStcok". Stash never resolves a stock by name: only five hard-coded mints are accepted
-  (SPYx, QQQx, NVDAx, TSLAx, AAPLx), checked again on every quote.
-- **A tokenized share is a claim on a share.** It is not the share itself.
+</details>
 
-<a id="vi-getting-out"></a>
+## 06 · On your phone
 
-## 06 · Getting out
+**Android app** (`apps/mobile`). Started from Solana Mobile's official `expo-web3js-minimal`
+template. It connects and signs through Mobile Wallet Adapter, so any MWA wallet works (Solflare,
+Phantom, or the Fake Wallet on an emulator). On devnet it:
 
-Sell 25%, 50% or all of a position back to USDC: one route, one transaction, signed by the user's
-wallet, with Stash's 0.5% fee taken in USDC. Observed on the fork: half of an NVDAx position sold
-for $248.53 against a $248.55 quote; in the app, 50% of NVDAx for $19.79 and 25% of SPYx for $14.85.
+1. saves your rule on chain with `set_rule`;
+2. checks for USDC payments every 15 seconds and puts a notification on the phone with the slice it would stash;
+3. stashes in one transaction: moves the slice into a second USDC account your wallet owns, and `record_stash` writes the receipt;
+4. moves stashed USDC back when you ask.
 
-<a id="vii-risk"></a>
+Why a phone: payments arrive when you're not at a desk, and the notification is the moment the
+habit happens.
 
-## 07 · Risk and economics
+**Web, on devnet** ([stash-drab-gamma.vercel.app/app](https://stash-drab-gamma.vercel.app/app)).
+The same client code in a browser, with any Wallet Standard wallet. "Send me a test payment" makes
+a test client pay you $2 of devnet USDC (and a little SOL for fees), so you can try the full loop in
+a minute.
+
+Devnet has no xStocks and no Jupiter, so neither of these buys stock. The stock purchase is the web
+app on the mainnet fork ([Run locally](#10-run-locally)).
+
+## 07 · Risks you inherit
+
+- **Who can hold xStocks.** Not everyone. Kraken's [xStocks FAQ](https://support.kraken.com/articles/xstocks-faq) says they aren't available to US persons or in Canada, the UK or Australia, and holding them in a self-custody wallet doesn't change that. Stash asks you to confirm before your first stash.
+- **Who can freeze them.** The SPYx mint has a freeze authority, a permanent delegate and a pausable config. The issuer can freeze or pause the token and move it out of any account. Stash can't remove that risk.
+- **Look-alike tokens.** Searching Jupiter for `NVDAx` returns impostors such as "NVIDA xStcok". Stash never looks a stock up by name: five mints are hard-coded in the program and in the client.
+- **xStocks aren't Solana-only.** They also exist on Ethereum, TON and Ink. What Stash needs Solana for is narrower: the whole basket and its receipt, atomically, for 5,500 lamports.
+- **A tokenized share is a claim on a share,** not the share itself.
+
+## 08 · Money
 
 | Parameter | Value | Why |
 | :--- | :--- | :--- |
-| Platform fee | 0.5% (50 bps) per swap | Taken by Jupiter into the treasury's token account for that stock |
-| Slippage | 1% (100 bps) per leg | xStock pools are thin away from US market hours; not tuned further |
-| Route accounts | `maxAccounts` 20 | 12 found no route; 16 to 24 returned the same compact routes |
-| Minimum leg | $1 | Below that the fee rounds to dust and network costs dominate |
-| Compute limit | 500,000 units | About 2x the worst measured three-stock basket (266,000) |
-| Priority fee | 1,000 micro-lamports per unit | Adds 500 lamports at the limit |
+| Platform fee | 0.5% per swap | Taken by Jupiter into the treasury's account for that stock |
+| Slippage | 1% per leg | xStock pools are thin outside US market hours |
+| Route accounts | `maxAccounts` 20 | 12 found no route; 16 to 24 gave the same routes |
+| Minimum leg | $1 | Below that, the fee rounds to dust |
+| Compute limit | 500,000 units | About 2.5x the worst measured two-stock basket (197,578) |
 
-**What a $100 stash costs the user:** $0.50 to Stash, plus 5,000 lamports for the signature and up
-to 500 lamports of priority fee. The first purchase of a stock also creates the user's token
-account for it, whose rent deposit is paid once in SOL; that amount has not been measured here.
+**What a $100 stash costs the user:** $0.50 to Stash, 5,000 lamports for the signature, up to 500
+lamports of priority fee, and on the first stash the rent for the receipt and any new token account.
 
-**What Stash earns:** $0.50 per $100 stashed, and the same on every sale. Stash pays nothing per
-transaction today, because the user pays the network fee. A sponsored fee payer would move that
-cost to Stash and is not built.
+**What Stash earns:** $0.50 per $100 stashed, and the same on every sale. It pays nothing per
+transaction today because the user pays the network fee.
 
-<a id="viii-the-decisions"></a>
+**Next, in order:** mainnet with a small allowlist of users; a limited session key so a stash can
+happen with no tap, signed by a key that can only call `record_stash` and swap into the rule's
+stocks; a fee sponsor so a wallet with no SOL can stash; a USDC on-ramp for people who are paid in
+local currency.
 
-## 08 · Engineering decisions
+## 09 · Engineering decisions
 
-Each was hit while building, with the real error.
+Each one was hit while building, with the real error.
 
-1. **Never trust a token name.** Jupiter search returns impostor mints named like xStocks. Fix: a
-   frozen allowlist of five verified mints, re-checked on every quote and sale.
-2. **`feeAccount is required for swap with platformFee`** (`NOT_SUPPORTED`) from
-   `swap-instructions`. With ExactIn, Jupiter takes the fee in the output mint, so the treasury needs
-   a Token-2022 account per stock. `pnpm fund` creates them.
-3. **`No routes found`** at `maxAccounts=12`. xStock pools need more accounts; 20 is the default.
-4. **Compute was unknown.** Simulated on the fork: 197,063 units for two stocks, 224,000 to 266,000
-   for three. The limit came down from 1.4 million to 500,000.
-5. **`encoding overruns Uint8Array`** from web3.js when a basket is too big. The serializer throws
-   before any size check. `packBasket` catches it and says "Try fewer stocks".
-6. **The "only on Solana" claim was wrong.** xStocks are also on Ethereum, TON and Ink. Every claim
-   was narrowed to the one-transaction basket.
-7. **GoonFi `custom program error: 0x15`** on a stash that worked an hour earlier. The fork clones
-   an account once and never updates it, while Jupiter quotes live mainnet. Fix: reset every account
-   the route touches just before simulating, except the accounts holding fake balances.
-8. **Whirlpool `InvalidTimestamp` (6022)**, "Timestamp should be greater than the last updated
-   timestamp". The fork's clock had drifted 73 minutes behind, so freshly reset pools looked as if
-   they came from the future. The first fix measured drift with `getBlockTime` and was wrong (it said
-   11s behind when the clock was 3s ahead). The working fix reads the Clock sysvar and time-travels
-   the fork only when it is more than 10 seconds behind. Five of five three-stock stashes then
-   landed.
-9. **`unsafeRes.map is not a function`** in `getParsedTransactions`. The fork does not support
-   batched RPC. Fix: fetch each transaction separately.
-10. **Payments dated January 1970.** The fork's `getTransaction` reports block time divided by
-    1,000. Fix: any impossible time is replaced with `getBlockTime(slot)`.
-11. **The server used to sign.** The first app signed with a server-held key. It was rewritten so the
-    browser signs and the server verifies the exact bytes it built; three cheats are now refused
-    (`pnpm api`).
-12. **A restarted fork left the browser wallet with 0 SOL**, so it could not pay fees. The app now
-    tops a fork wallet up whenever it runs low.
-
-<a id="ix-the-map"></a>
-
-## 09 · Repository map
-
-| Package | Lines | Role |
-| :--- | ---: | :--- |
-| `packages/core` | 1,395 | Domain and chain logic, 47 unit tests |
-| `packages/fork` | 262 | Fork-only helpers |
-| `packages/scripts` | 502 | Funding and end-to-end scripts |
-| `apps/web/src` | 508 | Server and per-wallet store |
-| `apps/web/public` | 1,066 | Landing page and app (HTML, CSS, JS) |
-
-```text
-packages/core/src
-  allowlist.ts     five verified xStock mints; everything else refused
-  allocation.ts    payment × rule → legs, exact to the base unit
-  jupiter.ts       quote and swap-instructions, fee account per leg
-  basket.ts        all legs into one v0 transaction; size and compute limits
-  payments.ts      incoming USDC payments, read from the chain
-  sell.ts          one stock back to USDC
-  verify.ts        signed message must equal the built one; ed25519 check
-  prices.ts        Jupiter prices for holdings
-packages/fork/src
-  surfnet.ts       cheatcodes, clock sync, route refresh; refuses any RPC that is not a surfnet
-  protect.ts       accounts holding fake balances, never reset
-  keys.ts          fork test keys in keys/ (gitignored)
-  pay.ts           the test payer's USDC transfer
-packages/scripts/src
-  fund.ts  e2e-stash.ts  e2e-basket-size.ts  e2e-payment.ts  e2e-sell.ts  e2e-api.ts
-apps/web
-  src/server.ts    routes: state, payments, rule, eligibility, preview, build, submit
-  src/store.ts     per-wallet rule and history
-  public/          landing.html, app.html, app.js, style.css, landing.css
-tools/             gui.ps1 (desktop GUI tests), phone-frames.html, logo-cut.py
-```
-
-### Built before vs during the hackathon
-
-Taken from [Draw](https://github.com/Nnadijoshuac/draw), the author's earlier Solana project
-(Stocklana, September 2026):
-
-- `pnpm-workspace.yaml` and `tsconfig.base.json`.
-- The approach of a surfpool mainnet fork with fake balances, and the cheatcode helper in
-  `packages/fork/src/surfnet.ts`, adapted.
-- The README's structure.
-
-Everything else was written between 25 and 29 November 2026. The logo was made with Gemini.
-
-<a id="x-running-it"></a>
+1. **Never trust a token name.** Jupiter search returns impostor mints. Fix: five verified mints, hard-coded in the program and re-checked on every quote.
+2. **`feeAccount is required for swap with platformFee`.** With ExactIn, Jupiter takes the fee in the output mint, so the treasury needs a Token-2022 account per stock. `pnpm fund` creates them.
+3. **`No routes found` at `maxAccounts=12`.** xStock pools need more accounts; 20 works.
+4. **The receipt broke the three-stock basket.** Adding `record_stash` cost 159 bytes. Three legs plus the receipt measured over 1,232 bytes. The basket is now capped at two everywhere, including in the program.
+5. **`encoding overruns Uint8Array`** from web3.js when a basket is too big; it throws before any size check. `packBasket` catches it and says "Try fewer stocks".
+6. **GoonFi `custom program error: 0x15`** on a stash that worked an hour earlier. The fork clones an account once while Jupiter quotes live mainnet. Fix: reset every account the route touches just before simulating.
+7. **Whirlpool `InvalidTimestamp` (6022).** The fork's clock had drifted 73 minutes behind. The fix reads the Clock sysvar and time-travels the fork when it's more than 10 seconds behind.
+8. **`unsafeRes.map is not a function`.** The fork doesn't support batched RPC; fetch transactions one by one.
+9. **The server used to sign.** The first version held the user's key on the server. Now the wallet signs and the server verifies the exact bytes it built; `pnpm api` checks four cheats are refused.
+10. **`A required privilege is not held by the client (os error 1314)`** from `cargo build-sbf` on Windows: platform-tools makes symlinks. Fix: Windows Developer Mode.
+11. **`feature edition2024 is required`** from transitive crates under Solana's Cargo 1.84. Fix: `rust-version = "1.84"` and Cargo's fallback resolver, so it picks versions that build.
+12. **Devnet deploy: `Max retries exceeded`** writing the 237 KB program over the public RPC, which kept answering 429. Fix: resume into the same buffer over QUIC instead of RPC.
+13. **Android build failed after 95 minutes** on a ninja `mkdir` under `react-native-worklets`: the Windows 260-character path limit. Fix: build from a short path.
 
 ## 10 · Run locally
 
-Needs Node 20+, pnpm and [surfpool](https://github.com/txtx/surfpool) (on Windows, inside WSL).
+**Try without installing anything:** [the devnet app](https://stash-drab-gamma.vercel.app/app) with
+Phantom, Solflare or Backpack set to devnet, or the [APK](https://stash-drab-gamma.vercel.app/stash.apk)
+with any Mobile Wallet Adapter wallet.
+
+**The full app, with stock swaps on a mainnet fork.** Needs Node 20+, pnpm and
+[surfpool](https://github.com/txtx/surfpool) (on Windows, inside WSL).
 
 1. `pnpm install`
-2. Start the fork:
-   `surfpool start --no-tui --host 0.0.0.0 --rpc-url https://api.mainnet-beta.solana.com`
-   (RPC on `127.0.0.1:8899`).
-3. `pnpm fund` creates the test keys in `keys/` (gitignored), the treasury's fee accounts, and fake
-   SOL and USDC.
-4. `pnpm --filter @stash/web dev`, then open `http://localhost:4321` (landing) or `/app`.
-5. In the app: tick eligibility, set a rule, press "Simulate a payment", then "Stash".
+2. Start the fork: `surfpool start --no-tui --host 0.0.0.0 --rpc-url https://api.mainnet-beta.solana.com` (RPC on `127.0.0.1:8899`).
+3. Build the program once: `cargo build-sbf` (on Windows, turn on Developer Mode first). This writes `target/deploy/stash.so`.
+4. `pnpm fund` creates test keys in `keys/` (gitignored), loads the program into the fork, funds fake SOL and USDC, and opens the treasury's fee accounts.
+5. `pnpm --filter @stash/web dev`, then open `http://localhost:4321/app`.
+6. Tick eligibility, save a rule, press "Simulate a payment", then "Stash".
 
-End to end without the browser: `pnpm stash` (or `pnpm stash 3`), `pnpm payment`, `pnpm sell`, and
-with the app running, `pnpm api`. Unit tests: `pnpm test`.
+Checks: `pnpm test` (unit tests), `pnpm api` (the full flow through the server, four cheats refused),
+`pnpm stash`, `pnpm sell`, `pnpm devnet` (the deployed program; needs `keys/deployer.json` with
+devnet SOL). Android: see [apps/mobile/README.md](apps/mobile/README.md).
 
 | Symptom | Cause | Fix |
 | :--- | :--- | :--- |
-| Server will not start: not a surfnet | It refuses any RPC that is not a local fork | Start surfpool first |
+| Server won't start: not a surfnet | It refuses any RPC that isn't a local fork | Start surfpool first |
 | Wallet shows 0 SOL after a restart | The fork forgets balances | Reload the app; it tops up. Run `pnpm fund` again |
-| Custom 0x15 or 6022 in simulation | Stale fork state or clock drift | Handled before each send; if it persists, restart surfpool |
-| History counts stashes holdings do not show | Saved history outlives a fork restart | Clear `.stash/` for a clean demo |
-
-<a id="xi-what-is-true-and-what-is-not"></a>
+| `Custom 0x15` or `6022` in simulation | Stale fork state or clock drift | Handled before each send; if it persists, restart surfpool |
+| `InstructionError: [n, Custom 0]` on a stash | That payment already has a receipt | Working as intended |
 
 ## 11 · What works today
 
-**Observed on a local mainnet fork** (surfpool 1.5.0, fake balances)
+**Observed on devnet** (program `7G66…u7oJ`, 28 November)
 
-| What | Evidence (fork signatures) |
+| What | Signature |
 | :--- | :--- |
-| Two-stock basket, $100, 197,063 units (script, 25 Nov) | `5q6T9X8eUTp9ec7abSnLbhhGUjoX8AyoNatvs54pHZjwhwLsevBGnkV5gCw45tGDxAda5oWPw2qP1pp8VtQ9t77u` |
-| Three-stock basket, $100, 252,633 units (script, 25 Nov) | `59DdfM4dozHF3XSwRd5xLEDRRvvBHsty6vTbQbqUE4YiNDoXH6jS21SiUHGjJGX6ynTxkL5xLg5DupUHC3qe32w6` |
-| Payment detected and stashed in the app, browser-signed, 197,578 units (27 Nov) | `2iSopxoQoEkMxmeqGhGnNPFkFNoT2NaWuf84UdGSDZF5NMA8rxPY1EHj1nZhuq4WEK4AK6dUkrX4TanrPQETAKep` |
-| Sold 50% of NVDAx in the app for $19.79 (27 Nov) | `y9Jn1sbYVxecJwiYDYYgR7riV2w15a9CqbQ9m6fM6pWCJ7FnGLggweNhL7pLi232eDYt9z2jwTWe4pvNqY2GvKu` |
-| Sold 25% of SPYx in the app at phone width for $14.85 (27 Nov) | `3XEXSGqxRygPzef22fnXpb5LyErkRMxbxeDeyLsvh9KWv6sBKduVSoHwM1zcnhLJkygvqMkgjvhDZ4Ns7m6EYKHV` |
-| Three cheats refused: a different transaction under the same build, a replayed build, a second stash of one payment | `pnpm api` |
+| Program deployed | `213zDqod1ggX4w9USDTt7N855k1UuUZtdGDTuELjHz3GFUZLZtzqufcet5NjrmJXwa4Y5toC1vHbMRx6KiSzXNNj` |
+| Rule saved and read back (`pnpm devnet`) | `4rTGJiaGm6RQBz3DbhhJ7eu1CEP65Z34d3voaYnxhMga6pB4JCGZUpo3pqKfLmem2R729Aw5L1bPBmAgsssKa5G7` |
+| $100 of a $500 payment recorded | `5QiYpMLEPUW6k77fbBB5yK7Jrp4Esfk37fBrraWCGA8ZSo7TivCfUuXqcX5nG2sF9AoWZXnJUzzc3kPrGDSMb5tu` |
+| Same payment again, a wrong amount, an unverified stock | refused: receipt in use, 6006, 6002 |
+| Phone and web client: test payment of $2 detected, rule saved, $0.40 stashed with receipt, second stash refused, moved back | stash `2o8ixi1iT6cHYqVcy1vwFUrS2WRSSkNdgoVPW2LCuf9PgPogM5r8QLmEQjyDFjYo6QQTUb9EajQZWwfVSmZouMfT` |
 
-The stash and sell drawers were tested on screen at desktop width and at about 740px, the narrowest
-a desktop browser window goes. Unit tests: 47, on the allowlist, allocation, fee accounts, basket
-packing, payments, selling and signature verification (`pnpm test`).
+**Observed on a local mainnet fork** (surfpool 1.5.0, real Jupiter routes, fake balances)
+
+| What | Evidence |
+| :--- | :--- |
+| Payment detected and a two-stock basket stashed in the app, wallet-signed, 197,578 units (27 Nov) | `2iSopxoQoEkMxmeqGhGnNPFkFNoT2NaWuf84UdGSDZF5NMA8rxPY1EHj1nZhuq4WEK4AK6dUkrX4TanrPQETAKep` |
+| Two-stock basket plus receipt: 1,002 / 1,232 bytes (27 Nov) | `pnpm basket-size --receipt` |
+| A second stash of the same payment sent straight to the chain, skipping the server | refused by the program: `InstructionError: [6, Custom 0]` |
+| Four cheats refused: a different transaction under the same build, a replayed build, a second stash through the server, a second stash direct to chain | `pnpm api` |
+| Sold 50% of NVDAx for $19.79 (27 Nov) | `y9Jn1sbYVxecJwiYDYYgR7riV2w15a9CqbQ9m6fM6pWCJ7FnGLggweNhL7pLi232eDYt9z2jwTWe4pvNqY2GvKu` |
 
 **Built, not observed end to end**
 
-- Nothing on mainnet. Every observation above is on the fork.
+- Nothing on mainnet. Stock purchases have only run on the fork.
 
 **Deliberately absent**
 
-- Mainnet deployment. The owner's rule for this build is zero real-money cost.
-- A fiat on-ramp or off-ramp. Stash starts from USDC already in the wallet.
-- Investment advice. The user chooses the basket.
+- Mainnet deployment. This build spends no real money.
+- A fiat on-ramp. Stash starts from USDC already in the wallet.
+- Investment advice. You choose the basket.
 
 **Open work**
 
-- Phantom or another real wallet in place of the fork's browser test wallet.
-- A fee sponsor, so a user with no SOL can still stash.
-- Automatic stashing without a tap, which needs a delegated or session key.
+- A session key so a stash can happen with no tap.
+- A push server, so the phone hears about payments while the app is closed.
+- A fee sponsor.
 - A verified eligibility check in place of a tick box.
+
+### Built before and during the hackathon
+
+From [Draw](https://github.com/Nnadijoshuac/draw), the author's earlier Solana project (September
+2026): the workspace setup, the idea of a surfpool mainnet fork with fake balances, the cheatcode
+helper in `packages/fork/src/surfnet.ts` (adapted), and this README's structure. Everything else was
+written between 25 and 29 November 2026; the first commit is the README, on 25 November. The
+Android app started from Solana Mobile's template. The logo was made with Gemini.
 
 ---
 
 <p align="center">
-  <strong>Get paid. Keep some.</strong><br>
+  <strong>Get paid. Keep a slice.</strong><br>
   <sub>Built for the <a href="https://hack.dev3pack.xyz">Dev3pack Global Hackathon ↗</a></sub>
 </p>

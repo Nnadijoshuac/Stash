@@ -12,4 +12,7 @@ cp apps/web/public/landing.css site/
 cp apps/web/public/landing.js site/
 cp apps/web/public/brand/stash-splat-*.png site/brand/
 node tools/build-demo.mjs
+# The Android release, if one has been built (set STASH_APK to point at it).
+apk="${STASH_APK:-apps/mobile/android/app/build/outputs/apk/release/app-release.apk}"
+if [ -f "$apk" ]; then cp "$apk" site/stash.apk; else echo "no APK at $apk; /stash.apk will be missing"; fi
 echo "site/ ready: $(ls site | tr '\n' ' ')"

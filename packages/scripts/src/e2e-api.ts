@@ -4,9 +4,10 @@
  *
  * A new wallet is made here and its key never reaches the server. It gets
  * funded, sets a rule, gets paid, stashes, then sells, signing each step
- * locally. It also tries three cheats and expects each one refused: a different
- * transaction under the same build, the same build twice, and stashing a
- * payment that was already stashed.
+ * locally. It also tries four cheats and expects each one refused: a different
+ * transaction under the same build, the same build twice, stashing a payment
+ * that was already stashed, and sending that second stash straight to the
+ * chain, where the program refuses it.
  */
 import { Connection, Keypair, SystemProgram, TransactionMessage, VersionedTransaction } from "@solana/web3.js";
 import { allocate, buildBasket } from "@stash/core";
