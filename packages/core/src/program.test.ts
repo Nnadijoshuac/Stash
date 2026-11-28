@@ -20,6 +20,13 @@ const sigB = bs58.encode(Buffer.concat([Buffer.alloc(32, 1), Buffer.alloc(32, 2)
 const disc = (name: string) => createHash("sha256").update(`global:${name}`).digest().subarray(0, 8);
 
 describe("stash program client", () => {
+  it("matches the discriminators the Android app writes out by hand (apps/mobile/lib/stash.ts)", () => {
+    const hex = (ns: string, name: string) => createHash("sha256").update(`${ns}:${name}`).digest().subarray(0, 8).toString("hex");
+    expect(hex("global", "set_rule")).toBe("ed94b2ac7f467267");
+    expect(hex("global", "record_stash")).toBe("aa42f28feda8b5a5");
+    expect(hex("account", "StashRule")).toBe("d70f67ac5fc8f5ed");
+  });
+
   it("encodes set_rule as Anchor expects: discriminator, u16 share, then a Borsh vec of (mint, u16)", () => {
     const ix = setRuleInstruction(owner, {
       stashBps: 2_000,

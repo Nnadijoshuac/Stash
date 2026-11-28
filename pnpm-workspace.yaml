@@ -1,5 +1,7 @@
 packages:
   - "apps/*"
+  # The Android app has its own npm install. Expo builds more simply outside the pnpm workspace.
+  - "!apps/mobile"
   - "packages/*"
 
 # esbuild backs vitest; bigint-buffer speeds up web3.js account decoding.
