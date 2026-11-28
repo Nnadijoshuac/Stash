@@ -54,6 +54,9 @@ a:focus-visible { outline: 2px solid var(--orange); outline-offset: 3px; border-
 .btn-orange:hover { background: var(--orange-press); }
 .btn-ink { background: var(--ink); color: #fff; }
 .btn-ink:hover { opacity: 0.9; }
+.btn-ghost { color: var(--on-navy); box-shadow: inset 0 0 0 1px oklch(97% 0.004 262 / 0.28); }
+.btn-ghost:hover { box-shadow: inset 0 0 0 1px oklch(97% 0.004 262 / 0.6); }
+.nav-links { display: flex; gap: 22px; }
 
 /* ---------------------------------------------------------------- hero */
 .hero {
@@ -130,6 +133,7 @@ a:focus-visible { outline: 2px solid var(--orange); outline-offset: 3px; border-
 @keyframes splat-out { to { opacity: 0; scale: calc(var(--s, 1) * 1.08); } }
 .closing h2 { margin: 0 auto; max-width: 18ch; font-size: clamp(2rem, 5vw, 3.25rem); line-height: 1.05; }
 .closing .btn { margin-top: 32px; }
+.closing .btn + .btn { margin-left: 10px; }
 
 /* ---------------------------------------------------------------- footer
  * Fades from the page colour into blue. Blending in OKLCH keeps the middle
