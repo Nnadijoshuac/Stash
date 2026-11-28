@@ -29,6 +29,8 @@ const SHARES = [1000, 2000, 3000, 5000]
 const explorer = (sig: string) => `https://explorer.solana.com/tx/${sig}?cluster=devnet`
 
 export function StashScreen() {
+  // A wallet restored from storage comes back with its address as a string,
+  // not a PublicKey, so Connected wraps it again (new PublicKey takes either).
   const { account, connect } = useMobileWallet()
   return (
     <SafeAreaView style={s.screen} edges={['top', 'bottom']}>
@@ -39,7 +41,7 @@ export function StashScreen() {
           <Text style={s.network}>Solana devnet</Text>
         </View>
         {account ? (
-          <Connected owner={account.address} />
+          <Connected owner={new PublicKey(account.address)} />
         ) : (
           <View style={s.section}>
             <Text style={s.body}>
