@@ -49,8 +49,7 @@
         {
           "color": "#ff5a1f"
         }
-      ],
-      "./plugins/with-short-cmake-paths"
+      ]
     ],
     "experiments": {
       "reactCompiler": true,

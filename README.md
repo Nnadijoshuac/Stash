@@ -276,7 +276,7 @@ Each one was hit while building, with the real error.
 10. **`A required privilege is not held by the client (os error 1314)`** from `cargo build-sbf` on Windows: platform-tools makes symlinks. Fix: Windows Developer Mode.
 11. **`feature edition2024 is required`** from transitive crates under Solana's Cargo 1.84. Fix: `rust-version = "1.84"` and Cargo's fallback resolver, so it picks versions that build.
 12. **Devnet deploy: `Max retries exceeded`** writing the 237 KB program over the public RPC, which kept answering 429. Fix: resume into the same buffer over QUIC instead of RPC.
-13. **Android build failed after 95 minutes** on a ninja `mkdir` under `react-native-worklets`: the Windows 260-character path limit. Fix: build from a short path.
+13. **Android build failed after 95 minutes** on a ninja `mkdir`: the Windows 260-character path limit. A short project path got past `react-native-worklets` but not gesture-handler's codegen folder, which is 270 characters on its own. Fix: build in WSL.
 
 ## 10 · Run locally
 

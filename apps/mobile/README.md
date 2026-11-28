@@ -37,9 +37,9 @@ payment, the rule, a stash with its receipt, a refused second stash, and the mov
 
 ## Build
 
-Needs Node 20+, JDK 17 and the Android SDK (`ANDROID_HOME`). On Windows, build from a short path
-such as `C:\sm`: the native build goes past the 260-character path limit otherwise.
-`plugins/with-short-cmake-paths.js` shortens CMake's object paths for the same reason.
+Needs Node 20+, JDK 17 and the Android SDK (`ANDROID_HOME`). On Windows, build inside WSL: one of
+the native build folders (react-native-gesture-handler's codegen) is 270 characters long, past
+Windows' 260-character limit, however short the project path is.
 
 ```bash
 npm install
